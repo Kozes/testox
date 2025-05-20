@@ -95,10 +95,10 @@ app.post('/admin/end', (req, res) => {
 
 // ✅ 참가자 상태 조회
 app.get('/admin/participants', (req, res) => {
-  const survivors = gameState.lastSurvivors.split(',').map(name => name.trim());
+  const survivors = (gameState.lastSurvivors || []).map(name => name.trim().toLowerCase());
   const data = gameState.participants.map(p => ({
     ...p,
-    survived: survivors.includes(p.name)
+    survived: survivors.includes(p.name.trim().toLowerCase())
   }));
 
   res.json(data);
@@ -109,7 +109,7 @@ app.get('/question', (req, res) => {
   res.json({
     question: gameState.currentQuestion,
     status: gameState.status,
-    survivors: gameState.lastSurvivors
+    survivors: Array.isArray(gameState.lastSurvivors) ? gameState.lastSurvivors.join(', ') : gameState.lastSurvivors
   });
 });
 
