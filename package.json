@@ -1,14 +1,18 @@
 {
-  "name": "ox-quiz",
+  "name": "ox-quiz-app",
   "version": "1.0.0",
+  "description": "SK AX OX 퀴즈 시스템",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
+    "csv-parse": "^5.5.0",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "openai": "^4.15.0",
+    "googleapis": "^116.0.0",
+    "node-fetch": "^2.6.11",
+    "openai": "^4.16.1",
     "socket.io": "^4.7.2"
   }
 }

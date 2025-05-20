@@ -4,6 +4,15 @@ const path = require('path');
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const { generateOXQuestion, askQuestionToGPT } = require('./openai');
+const { getTeamOXQuestion } = require('./sheet_team_gpt'); // GPT 기반 팀 문제 생성
+const fs = require('fs');
+
+if (process.env.GOOGLE_CREDENTIALS_JSON && !fs.existsSync('credentials.json')) {
+  const decoded = Buffer.from(process.env.GOOGLE_CREDENTIALS_JSON, 'base64').toString('utf-8');
+  fs.writeFileSync('credentials.json', decoded);
+  console.log('✅ credentials.json 복원 완료');
+}
+
 require('dotenv').config();
 
 const PORT = process.env.PORT || 3000;
@@ -24,9 +33,9 @@ let gameState = {
 
 const getQuestionForCurrentType = async () => {
   if (gameState.quizType === 'team') {
-    return { question: '팀 문제 예시: HC2팀은 무엇을 하나요?', answer: 'O' };
+    return await getTeamOXQuestion(); // ✅ 실제 시트 기반 GPT 퀴즈 생성
   } else {
-    return await generateOXQuestion();
+    return await generateOXQuestion(); // 기존 상식 퀴즈
   }
 };
 
