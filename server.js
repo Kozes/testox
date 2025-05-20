@@ -55,23 +55,24 @@ app.post('/submit', (req, res) => {
     return res.status(403).json({ message: '현재 응답할 수 없습니다.' });
   }
 
-  if (gameState.participants.find(p => p.name === name)) {
+  const submittedName = name.trim().toLowerCase();
+
+  if (gameState.participants.find(p => p.name.trim().toLowerCase() === submittedName)) {
     return res.status(409).json({ message: '이미 제출하셨습니다.' });
   }
 
-  // ✅ 생존자 체크 (2라운드 이상부터)
   if (gameState.round > 1) {
     const survivors = gameState.lastSurvivors
       .split(',')
-      .map(n => n.trim())
-      .filter(n => n);
+      .map(n => n.trim().toLowerCase())
+      .filter(n => n); // 빈 문자열 제거
 
-    if (!survivors.includes(name)) {
+    if (!survivors.includes(submittedName)) {
       return res.status(403).json({ message: '생존자만 제출할 수 있습니다.' });
     }
   }
 
-  gameState.participants.push({ name, answer });
+  gameState.participants.push({ name: name.trim(), answer });
   res.sendStatus(200);
 });
 
@@ -81,9 +82,12 @@ app.post('/admin/end', (req, res) => {
     p.answer.trim().toUpperCase() === gameState.currentAnswer.trim().toUpperCase()
   );
 
-  gameState.lastSurvivors = survivors.map(s => s.name).join(', ');
+  const names = survivors.map(s => s.name.trim()).filter(n => n); // 공백 제거 + 빈값 제외
+
+  gameState.lastSurvivors = names.join(', ');
   gameState.status = 'ended';
 
+  console.log('✅ 생존자:', gameState.lastSurvivors); // 확인용 로그
   res.json({ message: '라운드 종료', survivors: gameState.lastSurvivors });
 });
 
