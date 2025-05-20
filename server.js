@@ -105,9 +105,12 @@ app.post('/submit', (req, res) => {
 
 // ✅ 라운드 종료 (생존자 계산 + 정답 브로드캐스트)
 app.post('/admin/end', (req, res) => {
+  console.log('✅ 제출된 참가자:', gameState.participants); // 이 줄 추가
+
   const survivors = gameState.participants.filter(p =>
     p.answer.trim().toUpperCase() === gameState.currentAnswer.trim().toUpperCase()
   );
+
   const names = survivors.map(s => s.name.trim()).filter(n => n);
 
   gameState.lastSurvivors = names;
