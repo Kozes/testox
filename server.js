@@ -16,7 +16,8 @@ let gameState = {
   currentAnswer: '',
   participants: [],
   status: 'waiting',
-  lastSurvivors: []  // 🔧 중요: 문자열 ❌ → 배열 ✅
+  lastSurvivors: [],
+  roundParticipants: {}  // ✅ 추가
 };
 // ✅ 게임 시작
 app.post('/admin/start', async (req, res) => {
@@ -73,10 +74,15 @@ if (gameState.round > 1) {
   }
 }
 
-  // 제출자 등록
-  gameState.participants.push({ name: name.trim(), answer });
-  res.sendStatus(200);
-});
+  // 라운드 참가자 기록
+if (!gameState.roundParticipants[gameState.round]) {
+  gameState.roundParticipants[gameState.round] = [];
+}
+gameState.roundParticipants[gameState.round].push(name.trim());
+
+// 제출자 등록
+gameState.participants.push({ name: name.trim(), answer });
+res.sendStatus(200);
 
 // ✅ 라운드 종료
 app.post('/admin/end', (req, res) => {
@@ -141,6 +147,10 @@ app.post('/ask-gpt', async (req, res) => {
 
   const reply = await askQuestionToGPT(message);
   res.json({ reply });
+});
+
+app.get('/admin/round-participants', (req, res) => {
+  res.json(gameState.roundParticipants);
 });
 
 // ✅ 서버 실행
