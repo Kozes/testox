@@ -65,17 +65,13 @@ app.post('/submit', (req, res) => {
 
   // 생존자 체크 (2라운드 이상만 적용)
   if (gameState.round > 1) {
-    const survivors = gameState.lastSurvivors
-      .split(',')
-      .map(n => n.trim().toLowerCase())
-      .filter(n => n); // 빈값 제거
+  const survivors = (gameState.lastSurvivors || []).map(n => n.trim().toLowerCase());
 
-    // ✅ 로그 추가: 누가 막혔는지 Render 콘솔에서 확인 가능
-    if (!survivors.includes(submittedName)) {
-      console.log('🚫 생존자 아님:', submittedName, 'vs', survivors);
-      return res.status(403).json({ message: '생존자만 제출할 수 있습니다.' });
-    }
+  if (!survivors.includes(submittedName)) {
+    console.log('🚫 생존자 아님:', submittedName, 'vs', survivors);
+    return res.status(403).json({ message: '생존자만 제출할 수 있습니다.' });
   }
+}
 
   // 제출자 등록
   gameState.participants.push({ name: name.trim(), answer });
@@ -88,12 +84,12 @@ app.post('/admin/end', (req, res) => {
     p.answer.trim().toUpperCase() === gameState.currentAnswer.trim().toUpperCase()
   );
 
-  const names = survivors.map(s => s.name.trim()).filter(n => n); // 공백 제거 + 빈값 제외
+  const names = survivors.map(s => s.name.trim()).filter(n => n);
 
-  gameState.lastSurvivors = names.join(', ');
+  gameState.lastSurvivors = names;  // 문자열 대신 배열로 저장!
   gameState.status = 'ended';
 
-  console.log('✅ 생존자:', gameState.lastSurvivors); // 확인용 로그
+  console.log('✅ 생존자:', gameState.lastSurvivors);
   res.json({ message: '라운드 종료', survivors: gameState.lastSurvivors });
 });
 
