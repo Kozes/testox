@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>SK AX OX 퀴즈</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="overlay">
+    <!-- 로고 및 설명 -->
+    <img src="skax-logo.png" alt="SK AX 로고" class="logo" />
+    <p class="tagline">Future with AI, Powered by SK AX</p>
+    <p class="subtagline">HC2 Group TownHall Meeting</p>
+
+    <!-- 문제 표시 -->
+    <div id="question-box" class="question-box">문제 없음</div>
+
+    <!-- 이름 입력 -->
+    <input type="text" id="username" placeholder="이름을 입력하세요" />
+
+    <!-- OX 버튼 -->
+    <div>
+      <button onclick="submitAnswer('O')">⭕ O</button>
+      <button onclick="submitAnswer('X')">❌ X</button>
+    </div>
+
+    <!-- GPT 응답 표시 -->
+    <div id="chat-box" class="chat-box"></div>
+
+    <!-- GPT 질문 입력 -->
+    <div class="chat-input-area">
+      <input type="text" id="chat-input" placeholder="GPT에게 질문하세요..." />
+      <button onclick="sendMessage()">전송</button>
+    </div>
+
+    <!-- ✅ 생존자 박스 (표 형태) -->
+    <div class="survivor-box" id="survivor-box" style="display: none;">
+      <h4>🔥 생존자 리스트 (<span id="survivor-count">0</span>명)</h4>
+      <ul id="survivor-list" class="survivor-grid"></ul>
+    </div>
+  </div>
+
+  <script>
+    let alreadyShownSurvivorMessage = false;
+
+    async function loadQuestion() {
+      try {
+        const res = await fetch('/question');
+        const data = await res.json();
+
+        document.getElementById('question-box').innerText =
+          data.question || data.message || '문제 없음';
+
+        // 생존자 표시 (단 1회만)
+       if (data.status === 'ended' && !alreadyShownSurvivorMessage) {
+  alreadyShownSurvivorMessage = true;
+  const box = document.getElementById('survivor-box');
+  const list = document.getElementById('survivor-list');
+  const count = document.getElementById('survivor-count');
+
+  box.style.display = 'block';
+  list.innerHTML = '';
+
+  if (data.survivors && data.survivors.trim() !== '') {
+    const names = data.survivors.split(',').map(n => n.trim());
+    count.innerText = names.length;
+
+    const displayLimit = 10;
+    const visibleNames = names.slice(0, displayLimit);
+
+    visibleNames.forEach(name => {
+      const li = document.createElement('li');
+      li.textContent = name;
+      list.appendChild(li);
+    });
+
+    if (names.length > displayLimit) {
+      const li = document.createElement('li');
+      li.style.color = 'gray';
+      li.textContent = `외 ${names.length - displayLimit}명 더 있음`;
+      list.appendChild(li);
+    }
+  } else {
+    count.innerText = 0;
+    list.innerHTML = '<li style="color:gray;">😢 생존자가 없습니다</li>';
+  }
+}
+      } catch (err) {
+        console.error('❌ 문제 불러오기 실패:', err);
+      }
+    }
+
+    async function submitAnswer(answer) {
+      const name = document.getElementById('username').value.trim();
+      if (!name) return alert('이름을 입력하세요!');
+
+      try {
+        const res = await fetch('/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, answer })
+        });
+
+        if (res.status === 409) {
+          alert('이미 제출하셨습니다!');
+        } else if (res.status === 403) {
+          alert('생존자만 제출할 수 있습니다.');
+        } else {
+          alert('제출 완료!');
+        }
+      } catch (err) {
+        alert('서버 오류: 제출 실패');
+        console.error(err);
+      }
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('chat-input');
+      const message = input.value.trim();
+      if (!message) return;
+
+      input.value = '';
+      const chat = document.getElementById('chat-box');
+      chat.innerHTML += `<div>🙋 ${message}</div>`;
+
+      try {
+        const res = await fetch('/ask-gpt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+
+        const data = await res.json();
+        chat.innerHTML += `<div>🤖 ${data.reply}</div>`;
+      } catch (err) {
+        chat.innerHTML += `<div style="color:red;">GPT 응답 실패</div>`;
+        console.error(err);
+      }
+    }
+
+    setInterval(loadQuestion, 5000);
+    window.onload = loadQuestion;
+  </script>
+</body>
+</html>

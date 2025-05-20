@@ -1,0 +1,14 @@
+
+{
+  "name": "ox-quiz-ai-auto",
+  "version": "1.0.0",
+  "description": "AI가 자동으로 문제 출제 및 채점, 라운드 진행하는 서바이벌 OX 퀴즈 앱",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "openai": "^4.0.0"
+  }
+}

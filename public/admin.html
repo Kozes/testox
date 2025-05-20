@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>운영자 페이지</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      text-align: center;
+      padding: 30px;
+    }
+
+    .admin-container {
+      background: white;
+      max-width: 500px;
+      margin: auto;
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    }
+
+    button {
+      margin: 10px 5px;
+      padding: 10px 16px;
+      font-size: 1em;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #eee;
+    }
+
+    .log, .survivor-status {
+      margin-top: 20px;
+      text-align: left;
+      font-size: 0.95em;
+    }
+
+    .log-entry {
+      border-top: 1px solid #ddd;
+      padding: 6px;
+    }
+
+    .log-box {
+      background: #fafafa;
+      padding: 12px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <h2>운영자 페이지</h2>
+
+    <div>
+      <button onclick="startGame()">🎮 게임 시작</button>
+      <button onclick="nextQuestion()">⏭ 다음 문제 출제</button>
+      <button onclick="endRound()">🛑 라운드 종료</button>
+    </div>
+
+    <div class="survivor-status" id="survivor-status">생존자: 없음</div>
+
+    <div class="log-box" id="log-box">
+      📋 로그 기록
+    </div>
+  </div>
+
+  <script>
+    const logBox = document.getElementById('log-box');
+
+    function log(msg) {
+      const div = document.createElement('div');
+      div.className = 'log-entry';
+      div.innerText = `🕓 ${new Date().toLocaleTimeString()} - ${msg}`;
+      logBox.appendChild(div);
+    }
+
+    async function startGame() {
+      const res = await fetch('/admin/start', { method: 'POST' });
+      const data = await res.json();
+      log('게임 시작됨');
+    }
+
+    async function nextQuestion() {
+      const res = await fetch('/admin/next', { method: 'POST' });
+      const data = await res.json();
+      log('다음 문제 출제됨');
+    }
+
+    async function endRound() {
+      const res = await fetch('/admin/end', { method: 'POST' });
+      const data = await res.json();
+      log('🔴 라운드 종료');
+      document.getElementById('survivor-status').innerText = '생존자: ' + (data.survivors || '없음');
+    }
+  </script>
+</body>
+</html>
