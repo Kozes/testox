@@ -55,23 +55,29 @@ app.post('/submit', (req, res) => {
     return res.status(403).json({ message: '현재 응답할 수 없습니다.' });
   }
 
+  // 입력 이름 보정 (공백 제거 + 소문자 통일)
   const submittedName = name.trim().toLowerCase();
 
+  // 중복 제출 방지
   if (gameState.participants.find(p => p.name.trim().toLowerCase() === submittedName)) {
     return res.status(409).json({ message: '이미 제출하셨습니다.' });
   }
 
+  // 생존자 체크 (2라운드 이상만 적용)
   if (gameState.round > 1) {
     const survivors = gameState.lastSurvivors
       .split(',')
       .map(n => n.trim().toLowerCase())
-      .filter(n => n); // 빈 문자열 제거
+      .filter(n => n); // 빈값 제거
 
+    // ✅ 로그 추가: 누가 막혔는지 Render 콘솔에서 확인 가능
     if (!survivors.includes(submittedName)) {
+      console.log('🚫 생존자 아님:', submittedName, 'vs', survivors);
       return res.status(403).json({ message: '생존자만 제출할 수 있습니다.' });
     }
   }
 
+  // 제출자 등록
   gameState.participants.push({ name: name.trim(), answer });
   res.sendStatus(200);
 });
