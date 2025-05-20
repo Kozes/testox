@@ -11,6 +11,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ✅ 게임 상태
 let gameState = {
+  quizType: 'general',
   round: 0,
   currentQuestion: '',
   currentAnswer: '',
@@ -24,7 +25,7 @@ app.post('/admin/start', async (req, res) => {
   gameState.round = 1;
   gameState.participants = [];
 
-  const q = await generateOXQuestion();
+  const q = await getQuestionForCurrentType();
   gameState.currentQuestion = q.question;
   gameState.currentAnswer = q.answer;
   gameState.status = 'active';
@@ -32,12 +33,21 @@ app.post('/admin/start', async (req, res) => {
   res.json({ message: '게임 시작됨', question: q.question });
 });
 
+// ✅ 퀴즈 타입별 문제 생성 함수
+const getQuestionForCurrentType = async () => {
+  if (gameState.quizType === 'team') {
+    return { question: '팀 문제 예시: HC2팀은 무엇을 하나요?', answer: 'O' };
+  } else {
+    return await generateOXQuestion();
+  }
+};
+
 // ✅ 다음 문제 출제
 app.post('/admin/next', async (req, res) => {
   gameState.round += 1;
   gameState.participants = [];
 
-  const q = await generateOXQuestion();
+  const q = await getQuestionForCurrentType();
   gameState.currentQuestion = q.question;
   gameState.currentAnswer = q.answer;
   gameState.status = 'active';
@@ -156,4 +166,40 @@ app.get('/admin/round-participants', (req, res) => {
 // ✅ 서버 실행
 app.listen(PORT, () => {
   console.log(`✅ 서버 실행 중: http://localhost:${PORT}`);
+});
+
+
+// ✅ 퀴즈 타입 설정 엔드포인트
+app.post('/admin/set-type', (req, res) => {
+  const { type } = req.body;
+  if (type === 'team' || type === 'general') {
+    gameState.quizType = type;
+    console.log(`✅ 퀴즈 타입 설정됨: ${type}`);
+    res.json({ message: '타입 설정 완료' });
+  } else {
+    res.status(400).json({ message: '유효하지 않은 타입' });
+  }
+});
+
+
+// 라운드 종료 시 정답 브로드캐스트
+app.post('/admin/end', (req, res) => {
+  const survivors = gameState.participants.filter(p =>
+    p.answer.trim().toUpperCase() === gameState.currentAnswer.trim().toUpperCase()
+  );
+
+  const names = survivors.map(s => s.name.trim()).filter(n => n);
+
+  gameState.lastSurvivors = names;
+  gameState.status = 'ended';
+
+  console.log('✅ 생존자:', gameState.lastSurvivors);
+
+  // 클라이언트에게 정답 전송
+  io.emit('roundEnded', {
+    answer: gameState.currentAnswer,
+    survivors: gameState.lastSurvivors
+  });
+
+  res.json({ message: '라운드 종료', survivors: gameState.lastSurvivors });
 });

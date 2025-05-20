@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -58,6 +59,12 @@
       <button onclick="endRound()">🛑 라운드 종료</button>
     </div>
 
+    <div>
+      <button onclick="setQuizType('team')">👥 팀 기반 퀴즈</button>
+      <button onclick="setQuizType('general')">🧠 상식 퀴즈</button>
+    </div>
+    <div id="quiz-type-label">선택된 퀴즈 타입: 없음</div>
+
     <div class="survivor-status" id="survivor-status">생존자: 없음</div>
 
     <div class="log-box" id="log-box">
@@ -92,6 +99,16 @@
       const data = await res.json();
       log('🔴 라운드 종료');
       document.getElementById('survivor-status').innerText = '생존자: ' + (data.survivors || '없음');
+    }
+
+    async function setQuizType(type) {
+      await fetch('/admin/set-type', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type })
+      });
+      document.getElementById('quiz-type-label').innerText = '선택된 퀴즈 타입: ' + type;
+      log(`퀴즈 타입 설정됨 → ${type}`);
     }
   </script>
 </body>

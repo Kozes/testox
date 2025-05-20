@@ -139,7 +139,46 @@
     }
 
     setInterval(loadQuestion, 5000);
-    window.onload = loadQuestion;
+    
+socket = io();
+socket.on('roundEnded', (data) => {
+  alreadyShownSurvivorMessage = false;
+  const box = document.getElementById('survivor-box');
+  const list = document.getElementById('survivor-list');
+  const count = document.getElementById('survivor-count');
+
+  box.style.display = 'block';
+  list.innerHTML = '';
+
+  if (data.survivors && data.survivors.length > 0) {
+    const names = data.survivors;
+    count.innerText = names.length;
+
+    const displayLimit = 10;
+    const visibleNames = names.slice(0, displayLimit);
+
+    visibleNames.forEach(name => {
+      const li = document.createElement('li');
+      li.textContent = name;
+      list.appendChild(li);
+    });
+
+    if (names.length > displayLimit) {
+      const li = document.createElement('li');
+      li.style.color = 'gray';
+      li.textContent = `외 ${names.length - displayLimit}명 더 있음`;
+      list.appendChild(li);
+    }
+  } else {
+    count.innerText = 0;
+    list.innerHTML = '<li style="color:gray;">😢 생존자가 없습니다</li>';
+  }
+
+  const questionBox = document.getElementById('question-box');
+  questionBox.innerText += `\n\n✅ 정답: ${data.answer}`;
+});
+window.onload = loadQuestion;
+
   </script>
 </body>
 </html>
