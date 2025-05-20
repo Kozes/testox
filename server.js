@@ -16,9 +16,8 @@ let gameState = {
   currentAnswer: '',
   participants: [],
   status: 'waiting',
-  lastSurvivors: ''
+  lastSurvivors: []  // 🔧 중요: 문자열 ❌ → 배열 ✅
 };
-
 // ✅ 게임 시작
 app.post('/admin/start', async (req, res) => {
   gameState.round = 1;
@@ -28,7 +27,7 @@ app.post('/admin/start', async (req, res) => {
   gameState.currentQuestion = q.question;
   gameState.currentAnswer = q.answer;
   gameState.status = 'active';
-  gameState.lastSurvivors = '';
+  gameState.lastSurvivors = [];
 
   res.json({ message: '게임 시작됨', question: q.question });
 });
@@ -42,7 +41,7 @@ app.post('/admin/next', async (req, res) => {
   gameState.currentQuestion = q.question;
   gameState.currentAnswer = q.answer;
   gameState.status = 'active';
-  gameState.lastSurvivors = '';
+  gameState.lastSurvivors = [];
 
   res.json({ message: `문제 ${gameState.round} 출제됨`, question: q.question });
 });
