@@ -27,7 +27,6 @@ app.post('/admin/start', async (req, res) => {
   gameState.currentQuestion = q.question;
   gameState.currentAnswer = q.answer;
   gameState.status = 'active';
-  gameState.lastSurvivors = [];
 
   res.json({ message: '게임 시작됨', question: q.question });
 });
@@ -41,8 +40,7 @@ app.post('/admin/next', async (req, res) => {
   gameState.currentQuestion = q.question;
   gameState.currentAnswer = q.answer;
   gameState.status = 'active';
-  gameState.lastSurvivors = [];
-
+ 
   res.json({ message: `문제 ${gameState.round} 출제됨`, question: q.question });
 });
 
@@ -54,36 +52,27 @@ app.post('/submit', (req, res) => {
     return res.status(403).json({ message: '현재 응답할 수 없습니다.' });
   }
 
-  // 이름 유효성 검사
-  if (!name || typeof name !== 'string' || !name.trim()) {
-    return res.status(400).json({ message: '이름이 유효하지 않습니다.' });
-  }
-
   // 입력 이름 보정 (공백 제거 + 소문자 통일)
   const submittedName = name.trim().toLowerCase();
 
-  // ✅ 생존자 체크 (2라운드 이상부터 적용)
-  if (gameState.round > 1) {
-    const survivors = Array.isArray(gameState.lastSurvivors)
-      ? gameState.lastSurvivors.map(n => n.trim().toLowerCase())
-      : [];
-
-    console.log('🚫 생존자 비교:', submittedName, 'vs', survivors);
-
-    if (!survivors.includes(submittedName)) {
-      return res.status(403).json({ message: '생존자만 제출할 수 있습니다.' });
-    }
-  }
-
-  // ✅ 중복 제출 방지 (참가자 등록 전에 검사해야 함)
+  // 중복 제출 방지
   if (gameState.participants.find(p => p.name.trim().toLowerCase() === submittedName)) {
     return res.status(409).json({ message: '이미 제출하셨습니다.' });
   }
 
-  // ✅ 제출자 등록
-  gameState.participants.push({ name: name.trim(), answer });
-  res.sendStatus(200);
-});
+  // ✅ 생존자 체크 (2라운드 이상만 적용)
+if (gameState.round > 1) {
+  const survivors = Array.isArray(gameState.lastSurvivors)
+    ? gameState.lastSurvivors.map(n => n.trim().toLowerCase())
+    : [];
+
+  console.log('🚫 생존자 비교:', submittedName, 'vs', survivors);
+
+  if (!survivors.includes(submittedName)) {
+    return res.status(403).json({ message: '생존자만 제출할 수 있습니다.' });
+  }
+}
+
   // 제출자 등록
   gameState.participants.push({ name: name.trim(), answer });
   res.sendStatus(200);
