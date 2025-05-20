@@ -3,7 +3,7 @@ require('dotenv').config();
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// ✅ 기본 OX 문제 출제
+// ✅ 기본 OX 문제 출제 (정답: 정확하게 추출 + fallback 처리)
 const generateOXQuestion = async () => {
   const res = await openai.chat.completions.create({
     model: 'gpt-4',
@@ -17,19 +17,23 @@ const generateOXQuestion = async () => {
 
   const text = res.choices[0].message.content.trim();
 
-  // 정답 추출
-  const answerMatch = text.match(/정답:\s*(O|X)/);
-  const answer = answerMatch ? answerMatch[1] : 'O';
+  // 문제와 정답 분리
+  const questionMatch = text.match(/문제[:：]?\s*(.+)/); // "문제:"로 시작하는 경우
+  const answerMatch = text.match(/정답[:：]?\s*([OX])/i); // "정닐" 회피 + 대소문자 허용
 
-  // 문제 텍스트에서 정답 문장 제거 (마지막 줄 제거)
-  const lines = text.split('\n').filter(line => !line.includes('정답:'));
+  const question = questionMatch
+    ? questionMatch[1].trim()
+    : text.replace(/정답[:：]?\s*[OX]/i, '').trim(); // fallback: 정답 줄 제거
+
+  const answer = answerMatch ? answerMatch[1].toUpperCase() : 'X'; // fallback 정답
 
   return {
-    question: lines.join('\n').trim(),
+    question,
     answer
   };
 };
 
+// ✅ 사용자 질문 응답 (정답 유추 차단)
 const askQuestionToGPT = async (prompt) => {
   const res = await openai.chat.completions.create({
     model: 'gpt-4',
