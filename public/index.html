@@ -22,18 +22,22 @@
     <input type="text" id="username" placeholder="이름을 입력하세요" />
 
     <!-- OX 버튼 -->
-    <div>
-      <button onclick="submitAnswer('O')">⭕ O</button>
-      <button onclick="submitAnswer('X')">❌ X</button>
+    <div style="display: flex; gap: 20px; justify-content: center; margin-top: 20px;">
+    <button onclick="submitAnswer('O')" style="font-size: 2.5rem; background: none; border: none; cursor: pointer;" title="O 선택">
+     🟢
+    </button>
+    <button onclick="submitAnswer('X')" style="font-size: 2.5rem; background: none; border: none; cursor: pointer;" title="X 선택">
+     ❌
+    </button>
     </div>
 
     <!-- GPT 응답 표시 -->
     <div id="chat-box" class="chat-box"></div>
 
     <!-- GPT 질문 입력 -->
-    <div class="chat-input-area">
-      <input type="text" id="chat-input" placeholder="GPT에게 질문하세요..." />
-      <button onclick="sendMessage()">전송</button>
+    <div class="chat-input-area" style="display: flex; gap: 10px; margin-top: 10px;">
+    <input type="text" id="chat-input" placeholder="GPT에게 질문하세요..." style="flex: 1; padding: 8px;" />
+    <button onclick="sendMessage()" style="padding: 8px 12px;">전송</button>
     </div>
 
     <!-- 생존자 박스 -->
