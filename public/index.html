@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -14,21 +14,22 @@
 
     <!-- 문제 표시 -->
     <div id="question-box" class="question-box">문제 없음</div>
-    <!-- ✅ 여기에 추가 -->
+
     <p id="participant-count" style="font-weight: bold; margin-top: 10px;">
       현재 참여자 수: 0명
     </p>
+
     <!-- 이름 입력 -->
     <input type="text" id="username" placeholder="이름을 입력하세요" />
 
     <!-- OX 버튼 -->
     <div style="display: flex; gap: 20px; justify-content: center; margin-top: 20px;">
-    <button onclick="submitAnswer('O')" style="font-size: 1.5rem; background: none; border: none; cursor: pointer;" title="O 선택">
-     🟢
-    </button>
-    <button onclick="submitAnswer('X')" style="font-size: 1.5rem; background: none; border: none; cursor: pointer;" title="X 선택">
-     ❌
-    </button>
+      <button onclick="submitAnswer('O')" style="font-size: 1.5rem; background: none; border: none; cursor: pointer;" title="O 선택">
+        🟢
+      </button>
+      <button onclick="submitAnswer('X')" style="font-size: 1.5rem; background: none; border: none; cursor: pointer;" title="X 선택">
+        ❌
+      </button>
     </div>
 
     <!-- GPT 응답 표시 -->
@@ -36,8 +37,8 @@
 
     <!-- GPT 질문 입력 -->
     <div class="chat-input-area" style="display: flex; gap: 10px; margin-top: 10px;">
-    <input type="text" id="chat-input" placeholder="GPT에게 질문하세요..." style="flex: 1; padding: 8px;" />
-    <button onclick="sendMessage()" style="padding: 8px 12px;">전송</button>
+      <input type="text" id="chat-input" placeholder="GPT에게 질문하세요..." style="flex: 1; padding: 8px;" />
+      <button onclick="sendMessage()" style="padding: 8px 12px;">전송</button>
     </div>
 
     <!-- 생존자 박스 -->
@@ -57,57 +58,71 @@
     socket.on('newQuestion', (data) => {
       document.getElementById('question-box').innerText = data.question;
       document.getElementById('answer-display').innerText = '';
-      document.getElementById('survivor-box').style.display = 'none';
-	  document.getElementById('participant-count').innerText = '현재 참여자 수: 0명';
+      document.getElementById('participant-count').innerText = '현재 참여자 수: 0명';
       alreadyShownSurvivorMessage = false;
     });
+
     socket.on('participantCount', (count) => {
       document.getElementById('participant-count').innerText = `현재 참여자 수: ${count}명`;
     });
+
     socket.on('roundEnded', (data) => {
       document.getElementById('answer-display').innerText = `✅ 정답: ${data.answer}`;
 
       if (alreadyShownSurvivorMessage) return;
       alreadyShownSurvivorMessage = true;
 
-      const box = document.getElementById('survivor-box');
-      const list = document.getElementById('survivor-list');
-      const count = document.getElementById('survivor-count');
+      renderSurvivors(data.survivors);
+    });
 
-      box.style.display = 'block';
-      list.innerHTML = '';
-
-      if (data.survivors && Array.isArray(data.survivors) && data.survivors.length > 0) {
-        count.innerText = data.survivors.length;
-
-        const displayLimit = 10;
-        const visibleNames = data.survivors.slice(0, displayLimit);
-
-        visibleNames.forEach(name => {
-          const li = document.createElement('li');
-          li.textContent = name;
-          list.appendChild(li);
-        });
-
-        if (data.survivors.length > displayLimit) {
-          const li = document.createElement('li');
-          li.style.color = 'gray';
-          li.textContent = `외 ${data.survivors.length - displayLimit}명 더 있음`;
-          list.appendChild(li);
-        }
-      } else {
-        count.innerText = 0;
-        list.innerHTML = '<li style="color:gray;">😢 생존자가 없습니다</li>';
-      }
+    socket.on('survivors', (data) => {
+      renderSurvivors(data.survivors);
     });
 
     async function loadQuestion() {
       const res = await fetch('/question');
       const data = await res.json();
       document.getElementById('question-box').innerText = data.question || '문제 없음';
-	  
-	  document.getElementById('participant-count').innerText =
-       `현재 참여자 수: ${data.participantCount || 0}명`;
+      document.getElementById('participant-count').innerText = `현재 참여자 수: ${data.participantCount || 0}명`;
+    }
+
+    async function loadSurvivors() {
+      const res = await fetch('/question');
+      const data = await res.json();
+      const raw = data.survivors || '';
+      const survivors = raw.split(',').map(name => name.trim()).filter(Boolean);
+      renderSurvivors(survivors);
+    }
+
+    function renderSurvivors(survivors) {
+      const box = document.getElementById('survivor-box');
+      const list = document.getElementById('survivor-list');
+      const count = document.getElementById('survivor-count');
+
+      if (!survivors || survivors.length === 0) {
+        box.style.display = 'none';
+        return;
+      }
+
+      box.style.display = 'block';
+      list.innerHTML = '';
+      count.innerText = survivors.length;
+
+      const displayLimit = 10;
+      const visibleNames = survivors.slice(0, displayLimit);
+
+      visibleNames.forEach(name => {
+        const li = document.createElement('li');
+        li.textContent = name;
+        list.appendChild(li);
+      });
+
+      if (survivors.length > displayLimit) {
+        const li = document.createElement('li');
+        li.style.color = 'gray';
+        li.textContent = `외 ${survivors.length - displayLimit}명 더 있음`;
+        list.appendChild(li);
+      }
     }
 
     async function submitAnswer(answer) {
@@ -158,7 +173,10 @@
       }
     }
 
-    window.onload = loadQuestion;
+    window.onload = () => {
+      loadQuestion();
+      loadSurvivors(); // ✅ 생존자도 새로고침 시 유지
+    };
   </script>
 </body>
 </html>
