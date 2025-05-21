@@ -4,7 +4,7 @@ const { fetchTeamMembers } = require('./sheet_team'); // 너가 쓰던 파일 �
 
 function formatTeamDataForPrompt(teamMembers) {
   return teamMembers
-    .slice(0, 15) // GPT prompt가 너무 길지 않게 일부만 사용
+    .slice(0, 232) // GPT prompt가 너무 길지 않게 일부만 사용
     .map(p => `${p.부서} - ${p.성명} (${p.직책})`)
     .join('\n');
 }
