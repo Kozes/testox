@@ -23,10 +23,10 @@
 
     <!-- OX 버튼 -->
     <div style="display: flex; gap: 20px; justify-content: center; margin-top: 20px;">
-    <button onclick="submitAnswer('O')" style="font-size: 2.5rem; background: none; border: none; cursor: pointer;" title="O 선택">
+    <button onclick="submitAnswer('O')" style="font-size: 1.5rem; background: none; border: none; cursor: pointer;" title="O 선택">
      🟢
     </button>
-    <button onclick="submitAnswer('X')" style="font-size: 2.5rem; background: none; border: none; cursor: pointer;" title="X 선택">
+    <button onclick="submitAnswer('X')" style="font-size: 1.5rem; background: none; border: none; cursor: pointer;" title="X 선택">
      ❌
     </button>
     </div>
@@ -58,6 +58,7 @@
       document.getElementById('question-box').innerText = data.question;
       document.getElementById('answer-display').innerText = '';
       document.getElementById('survivor-box').style.display = 'none';
+	  document.getElementById('participant-count').innerText = '현재 참여자 수: 0명';
       alreadyShownSurvivorMessage = false;
     });
     socket.on('participantCount', (count) => {
