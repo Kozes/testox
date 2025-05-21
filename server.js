@@ -81,6 +81,31 @@ app.post('/admin/next', async (req, res) => {
   res.json({ message: `문제 ${gameState.round} 출제됨`, question: q.question });
 });
 
+// ✅ 핵심퀴즈 하드코딩 API
+app.post('/admin/core-question', (req, res) => {
+  const { version } = req.body;
+
+  const hardcodedQuestions = {
+    1: { question: 'SK AX는 SK C&C의 새 이름인가요?', answer: 'O' },
+    2: { question: 'GPT는 사람보다 정확하다?', answer: 'X' }
+  };
+
+  const selected = hardcodedQuestions[version];
+  if (!selected) {
+    return res.status(400).json({ message: '존재하지 않는 핵심퀴즈입니다.' });
+  }
+
+  gameState.round += 1;
+  gameState.participants = [];
+  gameState.currentQuestion = selected.question;
+  gameState.currentAnswer = selected.answer;
+  gameState.status = 'active';
+  addLogEntry(`💡 핵심퀴즈 ${version} 출제됨 - ${selected.question}`);
+
+  io.emit('newQuestion', { question: selected.question });
+  res.json({ message: `핵심퀴즈 ${version} 출제됨`, question: selected.question });
+});
+
 app.post('/submit', (req, res) => {
   const { name, answer } = req.body;
   if (gameState.status !== 'active') return res.status(403).json({ message: '현재 응답할 수 없습니다.' });
