@@ -45,6 +45,9 @@
       <button onclick="setQuizType('team')">👥 팀 기반 퀴즈</button>
       <button onclick="setQuizType('general')">🧠 상식 퀴즈</button>
       <button onclick="resetGame()">🔄 초기화 (1라운드부터)</button>
+      <!-- ✅ 핵심퀴즈 버튼 추가 -->
+      <button onclick="sendCoreQuestion(1)">💡 핵심퀴즈 1</button>
+      <button onclick="sendCoreQuestion(2)">💡 핵심퀴즈 2</button>
     </div>
     <div id="quiz-type-label">선택된 퀴즈 타입: 없음</div>
 
@@ -137,6 +140,16 @@
     socket.on('newParticipant', (data) => {
       renderParticipants(data);
     });
+    // ✅ 핵심퀴즈 전송 함수
+async function sendCoreQuestion(version) {
+  const res = await fetch('/admin/core-question', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ version })
+  });
+  const data = await res.json();
+  log(data.message);
+}
 
     window.onload = () => {
       loadParticipants();
