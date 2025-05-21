@@ -3,11 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <title>운영자 페이지</title>
+  <script src="/socket.io/socket.io.js"></script>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; text-align: center; padding: 30px; }
-    .admin-container { background: white; max-width: 600px; margin: auto; padding: 25px; border-radius: 16px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
-    button { margin: 10px 5px; padding: 10px 16px; font-size: 1em; border: none; border-radius: 6px; cursor: pointer; background: #eee; }
-    .log-entry { border-top: 1px solid #ddd; padding: 6px; text-align: left; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      text-align: center;
+      padding: 30px;
+    }
+    .admin-container {
+      background: white;
+      max-width: 600px;
+      margin: auto;
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    }
+    button {
+      margin: 10px 5px;
+      padding: 10px 16px;
+      font-size: 1em;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #eee;
+    }
+    .log-entry {
+      border-top: 1px solid #ddd;
+      padding: 6px;
+      text-align: left;
+    }
   </style>
 </head>
 <body>
@@ -21,13 +46,17 @@
       <button onclick="setQuizType('general')">🧠 상식 퀴즈</button>
     </div>
     <div id="quiz-type-label">선택된 퀴즈 타입: 없음</div>
+
     <h3>📋 참가자 리스트</h3>
     <ul id="participant-list"></ul>
+
     <h3>📜 로그</h3>
     <div id="log-box"></div>
   </div>
 
   <script>
+    const socket = io();
+
     async function startGame() {
       const res = await fetch('/admin/start', { method: 'POST' });
       const data = await res.json();
@@ -60,6 +89,23 @@
     async function loadParticipants() {
       const res = await fetch('/admin/participants');
       const data = await res.json();
+      renderParticipants(data);
+    }
+
+    async function loadLogs() {
+      const res = await fetch('/admin/logs');
+      const data = await res.json();
+      const box = document.getElementById('log-box');
+      box.innerHTML = '';
+      data.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = 'log-entry';
+        div.innerText = msg;
+        box.appendChild(div);
+      });
+    }
+
+    function renderParticipants(data) {
       const ul = document.getElementById('participant-list');
       ul.innerHTML = '';
       data.forEach(p => {
@@ -76,6 +122,15 @@
       div.innerText = `🕓 ${new Date().toLocaleTimeString()} - ${msg}`;
       box.appendChild(div);
     }
+
+    socket.on('newParticipant', (data) => {
+      renderParticipants(data);
+    });
+
+    window.onload = () => {
+      loadParticipants();
+      loadLogs();
+    };
   </script>
 </body>
 </html>
