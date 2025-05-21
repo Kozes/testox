@@ -79,6 +79,7 @@ app.post('/admin/next', async (req, res) => {
   addLogEntry(`다음 문제 출제됨 - ${q.question}`);
 
   io.emit('newQuestion', { question: q.question });
+  io.emit('survivors', { survivors: gameState.lastSurvivors }); // ✅ 추가
   res.json({ message: `문제 ${gameState.round} 출제됨`, question: q.question });
 });
 
@@ -104,6 +105,7 @@ app.post('/admin/core-question', (req, res) => {
   addLogEntry(`💡 핵심퀴즈 ${version} 출제됨 - ${selected.question}`);
 
   io.emit('newQuestion', { question: selected.question });
+  io.emit('survivors', { survivors: gameState.lastSurvivors }); // ✅ 생존자 재전송
   res.json({ message: `핵심퀴즈 ${version} 출제됨`, question: selected.question });
 });
 
