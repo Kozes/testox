@@ -44,6 +44,7 @@
       <button onclick="endRound()">🛑 라운드 종료</button>
       <button onclick="setQuizType('team')">👥 팀 기반 퀴즈</button>
       <button onclick="setQuizType('general')">🧠 상식 퀴즈</button>
+      <button onclick="resetGame()">🔄 초기화 (1라운드부터)</button>
     </div>
     <div id="quiz-type-label">선택된 퀴즈 타입: 없음</div>
 
@@ -84,6 +85,16 @@
       });
       document.getElementById('quiz-type-label').innerText = '선택된 퀴즈 타입: ' + type;
       log(`퀴즈 타입 설정됨 → ${type}`);
+    }
+
+    async function resetGame() {
+      if (!confirm('정말 초기화하시겠습니까? 모든 데이터가 삭제됩니다.')) return;
+      const res = await fetch('/admin/reset', { method: 'POST' });
+      const data = await res.json();
+      log(data.message);
+      document.getElementById('quiz-type-label').innerText = '선택된 퀴즈 타입: 없음';
+      document.getElementById('participant-list').innerHTML = '';
+      document.getElementById('log-box').innerHTML = '';
     }
 
     async function loadParticipants() {

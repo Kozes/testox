@@ -8,7 +8,6 @@
 </head>
 <body>
   <div class="overlay">
-    <!-- 로고 및 설명 -->
     <img src="skax-logo.png" alt="SK AX 로고" class="logo" />
     <p class="tagline">Future with AI, Powered by SK AX</p>
     <p class="subtagline">HC2 Group TownHall Meeting</p>
@@ -34,13 +33,13 @@
       <button onclick="sendMessage()">전송</button>
     </div>
 
-    <!-- ✅ 생존자 박스 -->
+    <!-- 생존자 박스 -->
     <div class="survivor-box" id="survivor-box" style="display: none;">
       <h4>🔥 생존자 리스트 (<span id="survivor-count">0</span>명)</h4>
       <ul id="survivor-list" class="survivor-grid"></ul>
     </div>
 
-    <!-- ✅ 정답 표시 영역 -->
+    <!-- 정답 표시 -->
     <div id="answer-display" style="margin-top: 20px; font-size: 1.2em; font-weight: bold; color: green;"></div>
   </div>
 
@@ -48,64 +47,21 @@
     const socket = io();
     let alreadyShownSurvivorMessage = false;
 
-    // ✅ 소켓으로 새 문제 수신
     socket.on('newQuestion', (data) => {
-      console.log('📥 새 문제 수신:', data.question);
       document.getElementById('question-box').innerText = data.question;
       document.getElementById('answer-display').innerText = '';
       document.getElementById('survivor-box').style.display = 'none';
       alreadyShownSurvivorMessage = false;
     });
 
-    // ✅ 소켓으로 정답 수신
     socket.on('roundEnded', (data) => {
       document.getElementById('answer-display').innerText = `✅ 정답: ${data.answer}`;
     });
 
     async function loadQuestion() {
-      try {
-        const res = await fetch('/question');
-        const data = await res.json();
-
-        document.getElementById('question-box').innerText =
-          data.question || data.message || '문제 없음';
-
-        if (data.status === 'ended' && !alreadyShownSurvivorMessage) {
-          alreadyShownSurvivorMessage = true;
-          const box = document.getElementById('survivor-box');
-          const list = document.getElementById('survivor-list');
-          const count = document.getElementById('survivor-count');
-
-          box.style.display = 'block';
-          list.innerHTML = '';
-
-          if (data.survivors && data.survivors.trim() !== '') {
-            const names = data.survivors.split(',').map(n => n.trim());
-            count.innerText = names.length;
-
-            const displayLimit = 10;
-            const visibleNames = names.slice(0, displayLimit);
-
-            visibleNames.forEach(name => {
-              const li = document.createElement('li');
-              li.textContent = name;
-              list.appendChild(li);
-            });
-
-            if (names.length > displayLimit) {
-              const li = document.createElement('li');
-              li.style.color = 'gray';
-              li.textContent = `외 ${names.length - displayLimit}명 더 있음`;
-              list.appendChild(li);
-            }
-          } else {
-            count.innerText = 0;
-            list.innerHTML = '<li style="color:gray;">😢 생존자가 없습니다</li>';
-          }
-        }
-      } catch (err) {
-        console.error('❌ 문제 불러오기 실패:', err);
-      }
+      const res = await fetch('/question');
+      const data = await res.json();
+      document.getElementById('question-box').innerText = data.question || '문제 없음';
     }
 
     async function submitAnswer(answer) {
@@ -156,7 +112,6 @@
       }
     }
 
-    setInterval(loadQuestion, 5000);
     window.onload = loadQuestion;
   </script>
 </body>

@@ -140,6 +140,23 @@ app.get('/admin/participants', (req, res) => {
   res.json(data);
 });
 
+app.post('/admin/reset', (req, res) => {
+  gameState = {
+    quizType: 'general',
+    round: 0,
+    currentQuestion: '',
+    currentAnswer: '',
+    participants: [],
+    status: 'waiting',
+    lastSurvivors: [],
+    roundParticipants: {},
+    logs: []
+  };
+  addLogEntry('🔄 전체 게임 초기화됨 (1라운드부터)');
+  io.emit('reset');
+  res.json({ message: '게임이 초기화되었습니다.' });
+});
+
 app.get('/admin/logs', (req, res) => {
   res.json(gameState.logs);
 });
