@@ -6,7 +6,6 @@ const io = require('socket.io')(http);
 const { generateOXQuestion, askQuestionToGPT } = require('./openai');
 const { getTeamOXQuestion } = require('./sheet_team_gpt');
 const fs = require('fs');
-
 require('dotenv').config();
 
 if (process.env.GOOGLE_CREDENTIALS_JSON && !fs.existsSync('credentials.json')) {
@@ -40,7 +39,9 @@ function addLogEntry(message) {
 }
 
 const getQuestionForCurrentType = async () => {
-  return gameState.quizType === 'team' ? await getTeamOXQuestion() : await generateOXQuestion();
+  return gameState.quizType === 'team'
+    ? await getTeamOXQuestion()
+    : await generateOXQuestion();
 };
 
 app.post('/admin/set-type', (req, res) => {
@@ -140,6 +141,21 @@ app.get('/admin/participants', (req, res) => {
   res.json(data);
 });
 
+app.get('/admin/logs', (req, res) => {
+  res.json(gameState.logs);
+});
+
+// ✅ 새로고침 시 문제 유지 보완
+app.get('/question', (req, res) => {
+  res.json({
+    question: gameState.currentQuestion || '문제 없음',
+    status: gameState.status,
+    survivors: Array.isArray(gameState.lastSurvivors)
+      ? gameState.lastSurvivors.join(', ')
+      : ''
+  });
+});
+
 app.post('/admin/reset', (req, res) => {
   gameState = {
     quizType: 'general',
@@ -155,10 +171,6 @@ app.post('/admin/reset', (req, res) => {
   addLogEntry('🔄 전체 게임 초기화됨 (1라운드부터)');
   io.emit('reset');
   res.json({ message: '게임이 초기화되었습니다.' });
-});
-
-app.get('/admin/logs', (req, res) => {
-  res.json(gameState.logs);
 });
 
 http.listen(PORT, () => {
