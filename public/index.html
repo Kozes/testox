@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -56,6 +56,39 @@
 
     socket.on('roundEnded', (data) => {
       document.getElementById('answer-display').innerText = `✅ 정답: ${data.answer}`;
+
+      if (alreadyShownSurvivorMessage) return;
+      alreadyShownSurvivorMessage = true;
+
+      const box = document.getElementById('survivor-box');
+      const list = document.getElementById('survivor-list');
+      const count = document.getElementById('survivor-count');
+
+      box.style.display = 'block';
+      list.innerHTML = '';
+
+      if (data.survivors && Array.isArray(data.survivors) && data.survivors.length > 0) {
+        count.innerText = data.survivors.length;
+
+        const displayLimit = 10;
+        const visibleNames = data.survivors.slice(0, displayLimit);
+
+        visibleNames.forEach(name => {
+          const li = document.createElement('li');
+          li.textContent = name;
+          list.appendChild(li);
+        });
+
+        if (data.survivors.length > displayLimit) {
+          const li = document.createElement('li');
+          li.style.color = 'gray';
+          li.textContent = `외 ${data.survivors.length - displayLimit}명 더 있음`;
+          list.appendChild(li);
+        }
+      } else {
+        count.innerText = 0;
+        list.innerHTML = '<li style="color:gray;">😢 생존자가 없습니다</li>';
+      }
     });
 
     async function loadQuestion() {
