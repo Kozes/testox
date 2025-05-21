@@ -110,7 +110,7 @@ app.post('/submit', (req, res) => {
     survived: survivors.includes(p.name.trim().toLowerCase())
   }));
   io.emit('newParticipant', participantsWithStatus);
-
+  io.emit('participantCount', gameState.participants.length);
   res.sendStatus(200);
 });
 

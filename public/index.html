@@ -14,7 +14,10 @@
 
     <!-- 문제 표시 -->
     <div id="question-box" class="question-box">문제 없음</div>
-
+    <!-- ✅ 여기에 추가 -->
+    <p id="participant-count" style="font-weight: bold; margin-top: 10px;">
+      현재 참여자 수: 0명
+    </p>
     <!-- 이름 입력 -->
     <input type="text" id="username" placeholder="이름을 입력하세요" />
 
@@ -53,7 +56,9 @@
       document.getElementById('survivor-box').style.display = 'none';
       alreadyShownSurvivorMessage = false;
     });
-
+    socket.on('participantCount', (count) => {
+      document.getElementById('participant-count').innerText = `현재 참여자 수: ${count}명`;
+    });
     socket.on('roundEnded', (data) => {
       document.getElementById('answer-display').innerText = `✅ 정답: ${data.answer}`;
 
@@ -95,6 +100,9 @@
       const res = await fetch('/question');
       const data = await res.json();
       document.getElementById('question-box').innerText = data.question || '문제 없음';
+	  
+	  document.getElementById('participant-count').innerText =
+       `현재 참여자 수: ${data.participantCount || 0}명`;
     }
 
     async function submitAnswer(answer) {
