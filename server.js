@@ -28,7 +28,8 @@ let gameState = {
   status: 'waiting',
   lastSurvivors: [],
   roundParticipants: {},
-  logs: []
+  logs: [],
+  allSurvivors: new Set() // ✅ 생존자 누적 저장용 Set 추가
 };
 
 function addLogEntry(message) {
@@ -147,6 +148,10 @@ app.post('/admin/end', (req, res) => {
 
   gameState.lastSurvivors = names;
   gameState.status = 'ended';
+
+  // ✅ 생존자 누적 저장
+  names.forEach(name => gameState.allSurvivors.add(name.trim().toLowerCase()));
+  
   addLogEntry(`🔴 라운드 종료됨 - 생존자 ${names.join(', ')}`);
 
   io.emit('roundEnded', {
@@ -158,10 +163,10 @@ app.post('/admin/end', (req, res) => {
 });
 
 app.get('/admin/participants', (req, res) => {
-  const survivors = (gameState.lastSurvivors || []).map(name => name.trim().toLowerCase());
+  const survivors = gameState.allSurvivors || new Set();
   const data = gameState.participants.map(p => ({
     ...p,
-    survived: survivors.includes(p.name.trim().toLowerCase())
+    survived: survivors.has(p.name.trim().toLowerCase())
   }));
   res.json(data);
 });
@@ -182,17 +187,18 @@ app.get('/question', (req, res) => {
 });
 
 app.post('/admin/reset', (req, res) => {
-  gameState = {
-    quizType: 'general',
-    round: 0,
-    currentQuestion: '',
-    currentAnswer: '',
-    participants: [],
-    status: 'waiting',
-    lastSurvivors: [],
-    roundParticipants: {},
-    logs: []
-  };
+ gameState = {
+  quizType: 'general',
+  round: 0,
+  currentQuestion: '',
+  currentAnswer: '',
+  participants: [],
+  status: 'waiting',
+  lastSurvivors: [],
+  roundParticipants: {},
+  logs: [],
+  allSurvivors: new Set() // ✅ 초기화 시 함께 리셋
+};
   addLogEntry('🔄 전체 게임 초기화됨 (1라운드부터)');
   io.emit('reset');
   res.json({ message: '게임이 초기화되었습니다.' });
