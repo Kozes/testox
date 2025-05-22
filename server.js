@@ -216,6 +216,35 @@ app.post('/admin/reset', (req, res) => {
   res.json({ message: '게임이 초기화되었습니다.' });
 });
 
+// 기존 server.js에 이 코드를 추가해주세요
+
+// GPT 채팅 엔드포인트 (기존 코드 다음에 추가)
+app.post('/ask-gpt', async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    const reply = await askQuestionToGPT(message);
+    res.json({ reply });
+  } catch (error) {
+    console.error('GPT API 오류:', error);
+    res.status(500).json({ error: 'GPT 응답을 가져올 수 없습니다.' });
+  }
+});
+
+// 참여자 수 실시간 업데이트를 위한 추가 (기존 /submit 엔드포인트 수정)
+// 기존 /submit 엔드포인트에서 다음 라인을 찾아서 수정:
+
+// 기존:
+// io.emit('participantCount', gameState.participants.length);
+
+// 수정 후:
+// io.emit('participantCount', gameState.participants.length);
+// 모든 클라이언트에게 참여자 수 업데이트 전송
+
+
 http.listen(PORT, () => {
   console.log(`✅ 서버 실행 중: http://localhost:${PORT}`);
 });
