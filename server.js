@@ -29,7 +29,7 @@ let gameState = {
   lastSurvivors: [],
   roundParticipants: {},
   logs: [],
-  allSurvivors: new Set()
+  allSurvivors: new Set() // ✅ 생존자 누적 저장용 Set 추가
 };
 
 function addLogEntry(message) {
@@ -44,6 +44,23 @@ const getQuestionForCurrentType = async () => {
     ? await getTeamOXQuestion()
     : await generateOXQuestion();
 };
+
+// ✅ 소켓 연결 시 현재 상태 전송
+io.on('connection', (socket) => {
+  console.log('새 클라이언트 연결됨');
+  
+  // 연결 즉시 현재 참여자 수 전송
+  socket.emit('participantCount', gameState.participants.length);
+  
+  // 현재 생존자 리스트도 전송
+  if (gameState.lastSurvivors && gameState.lastSurvivors.length > 0) {
+    socket.emit('survivors', { survivors: gameState.lastSurvivors });
+  }
+  
+  socket.on('disconnect', () => {
+    console.log('클라이언트 연결 해제됨');
+  });
+});
 
 app.post('/admin/set-type', (req, res) => {
   const { type } = req.body;
@@ -65,7 +82,12 @@ app.post('/admin/start', async (req, res) => {
   gameState.status = 'active';
   addLogEntry(`게임 시작됨 - ${q.question}`);
 
-  io.emit('newQuestion', { question: q.question });
+  // ✅ 라운드 정보도 함께 전송
+  io.emit('newQuestion', { 
+    question: q.question,
+    round: gameState.round,
+    status: gameState.status
+  });
   res.json({ message: '게임 시작됨', question: q.question });
 });
 
@@ -78,11 +100,17 @@ app.post('/admin/next', async (req, res) => {
   gameState.status = 'active';
   addLogEntry(`다음 문제 출제됨 - ${q.question}`);
 
-  io.emit('newQuestion', { question: q.question });
-  io.emit('survivors', { survivors: gameState.lastSurvivors });
+  // ✅ 라운드 정보도 함께 전송
+  io.emit('newQuestion', { 
+    question: q.question,
+    round: gameState.round,
+    status: gameState.status
+  });
+  io.emit('survivors', { survivors: gameState.lastSurvivors }); // ✅ 추가
   res.json({ message: `문제 ${gameState.round} 출제됨`, question: q.question });
 });
 
+// ✅ 핵심퀴즈 하드코딩 API
 app.post('/admin/core-question', (req, res) => {
   const { version } = req.body;
 
@@ -103,8 +131,13 @@ app.post('/admin/core-question', (req, res) => {
   gameState.status = 'active';
   addLogEntry(`💡 핵심퀴즈 ${version} 출제됨 - ${selected.question}`);
 
-  io.emit('newQuestion', { question: selected.question });
-  io.emit('survivors', { survivors: gameState.lastSurvivors });
+  // ✅ 라운드 정보도 함께 전송
+  io.emit('newQuestion', { 
+    question: selected.question,
+    round: gameState.round,
+    status: gameState.status
+  });
+  io.emit('survivors', { survivors: gameState.lastSurvivors }); // ✅ 생존자 재전송
   res.json({ message: `핵심퀴즈 ${version} 출제됨`, question: selected.question });
 });
 
@@ -141,19 +174,6 @@ app.post('/submit', (req, res) => {
   res.sendStatus(200);
 });
 
-app.post('/ask-gpt', async (req, res) => {
-  const { message } = req.body;
-  if (!message) return res.status(400).json({ error: '메시지가 없습니다.' });
-
-  try {
-    const reply = await askQuestionToGPT(message);
-    res.json({ reply });
-  } catch (err) {
-    console.error('GPT 오류:', err);
-    res.status(500).json({ error: 'GPT 응답 실패' });
-  }
-});
-
 app.post('/admin/end', (req, res) => {
   const survivors = gameState.participants.filter(p =>
     p.answer.trim().toUpperCase() === gameState.currentAnswer.trim().toUpperCase()
@@ -163,8 +183,9 @@ app.post('/admin/end', (req, res) => {
   gameState.lastSurvivors = names;
   gameState.status = 'ended';
 
+  // ✅ 생존자 누적 저장
   names.forEach(name => gameState.allSurvivors.add(name.trim().toLowerCase()));
-
+  
   addLogEntry(`🔴 라운드 종료됨 - 생존자 ${names.join(', ')}`);
 
   io.emit('roundEnded', {
@@ -188,37 +209,20 @@ app.get('/admin/logs', (req, res) => {
   res.json(gameState.logs);
 });
 
+// ✅ 새로고침 시 문제 유지 보완 + 현재 라운드 정보 추가
 app.get('/question', (req, res) => {
   res.json({
     question: gameState.currentQuestion || '문제 없음',
     status: gameState.status,
+    participantCount: gameState.participants.length, // ✅ 참여자 수 추가
+    currentRound: gameState.round, // ✅ 현재 라운드 추가
     survivors: Array.isArray(gameState.lastSurvivors)
       ? gameState.lastSurvivors.join(', ')
       : ''
   });
 });
 
-app.post('/admin/reset', (req, res) => {
-  gameState = {
-    quizType: 'general',
-    round: 0,
-    currentQuestion: '',
-    currentAnswer: '',
-    participants: [],
-    status: 'waiting',
-    lastSurvivors: [],
-    roundParticipants: {},
-    logs: [],
-    allSurvivors: new Set()
-  };
-  addLogEntry('🔄 전체 게임 초기화됨 (1라운드부터)');
-  io.emit('reset');
-  res.json({ message: '게임이 초기화되었습니다.' });
-});
-
-// 기존 server.js에 이 코드를 추가해주세요
-
-// GPT 채팅 엔드포인트 (기존 코드 다음에 추가)
+// ✅ GPT 채팅 엔드포인트 추가
 app.post('/ask-gpt', async (req, res) => {
   try {
     const { message } = req.body;
@@ -234,16 +238,23 @@ app.post('/ask-gpt', async (req, res) => {
   }
 });
 
-// 참여자 수 실시간 업데이트를 위한 추가 (기존 /submit 엔드포인트 수정)
-// 기존 /submit 엔드포인트에서 다음 라인을 찾아서 수정:
-
-// 기존:
-// io.emit('participantCount', gameState.participants.length);
-
-// 수정 후:
-// io.emit('participantCount', gameState.participants.length);
-// 모든 클라이언트에게 참여자 수 업데이트 전송
-
+app.post('/admin/reset', (req, res) => {
+ gameState = {
+  quizType: 'general',
+  round: 0,
+  currentQuestion: '',
+  currentAnswer: '',
+  participants: [],
+  status: 'waiting',
+  lastSurvivors: [],
+  roundParticipants: {},
+  logs: [],
+  allSurvivors: new Set() // ✅ 초기화 시 함께 리셋
+};
+  addLogEntry('🔄 전체 게임 초기화됨 (1라운드부터)');
+  io.emit('reset');
+  res.json({ message: '게임이 초기화되었습니다.' });
+});
 
 http.listen(PORT, () => {
   console.log(`✅ 서버 실행 중: http://localhost:${PORT}`);
