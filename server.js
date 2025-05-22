@@ -29,7 +29,7 @@ let gameState = {
   lastSurvivors: [],
   roundParticipants: {},
   logs: [],
-  allSurvivors: new Set() // ✅ 생존자 누적 저장용 Set 추가
+  allSurvivors: new Set()
 };
 
 function addLogEntry(message) {
@@ -79,11 +79,10 @@ app.post('/admin/next', async (req, res) => {
   addLogEntry(`다음 문제 출제됨 - ${q.question}`);
 
   io.emit('newQuestion', { question: q.question });
-  io.emit('survivors', { survivors: gameState.lastSurvivors }); // ✅ 추가
+  io.emit('survivors', { survivors: gameState.lastSurvivors });
   res.json({ message: `문제 ${gameState.round} 출제됨`, question: q.question });
 });
 
-// ✅ 핵심퀴즈 하드코딩 API
 app.post('/admin/core-question', (req, res) => {
   const { version } = req.body;
 
@@ -105,7 +104,7 @@ app.post('/admin/core-question', (req, res) => {
   addLogEntry(`💡 핵심퀴즈 ${version} 출제됨 - ${selected.question}`);
 
   io.emit('newQuestion', { question: selected.question });
-  io.emit('survivors', { survivors: gameState.lastSurvivors }); // ✅ 생존자 재전송
+  io.emit('survivors', { survivors: gameState.lastSurvivors });
   res.json({ message: `핵심퀴즈 ${version} 출제됨`, question: selected.question });
 });
 
@@ -117,20 +116,7 @@ app.post('/submit', (req, res) => {
   if (gameState.participants.find(p => p.name.trim().toLowerCase() === submittedName)) {
     return res.status(409).json({ message: '이미 제출하셨습니다.' });
   }
-  
-app.post('/ask-gpt', async (req, res) => {
-  const { message } = req.body;
-  if (!message) return res.status(400).json({ error: '메시지가 없습니다.' });
 
-  try {
-    const reply = await askQuestionToGPT(message);
-    res.json({ reply });
-  } catch (err) {
-    console.error('GPT 오류:', err);
-    res.status(500).json({ error: 'GPT 응답 실패' });
-  }
-});
-  
   if (gameState.round > 1) {
     const survivors = gameState.lastSurvivors.map(n => n.trim().toLowerCase());
     if (!survivors.includes(submittedName)) {
@@ -155,6 +141,19 @@ app.post('/ask-gpt', async (req, res) => {
   res.sendStatus(200);
 });
 
+app.post('/ask-gpt', async (req, res) => {
+  const { message } = req.body;
+  if (!message) return res.status(400).json({ error: '메시지가 없습니다.' });
+
+  try {
+    const reply = await askQuestionToGPT(message);
+    res.json({ reply });
+  } catch (err) {
+    console.error('GPT 오류:', err);
+    res.status(500).json({ error: 'GPT 응답 실패' });
+  }
+});
+
 app.post('/admin/end', (req, res) => {
   const survivors = gameState.participants.filter(p =>
     p.answer.trim().toUpperCase() === gameState.currentAnswer.trim().toUpperCase()
@@ -164,9 +163,8 @@ app.post('/admin/end', (req, res) => {
   gameState.lastSurvivors = names;
   gameState.status = 'ended';
 
-  // ✅ 생존자 누적 저장
   names.forEach(name => gameState.allSurvivors.add(name.trim().toLowerCase()));
-  
+
   addLogEntry(`🔴 라운드 종료됨 - 생존자 ${names.join(', ')}`);
 
   io.emit('roundEnded', {
@@ -190,7 +188,6 @@ app.get('/admin/logs', (req, res) => {
   res.json(gameState.logs);
 });
 
-// ✅ 새로고침 시 문제 유지 보완
 app.get('/question', (req, res) => {
   res.json({
     question: gameState.currentQuestion || '문제 없음',
@@ -202,18 +199,18 @@ app.get('/question', (req, res) => {
 });
 
 app.post('/admin/reset', (req, res) => {
- gameState = {
-  quizType: 'general',
-  round: 0,
-  currentQuestion: '',
-  currentAnswer: '',
-  participants: [],
-  status: 'waiting',
-  lastSurvivors: [],
-  roundParticipants: {},
-  logs: [],
-  allSurvivors: new Set() // ✅ 초기화 시 함께 리셋
-};
+  gameState = {
+    quizType: 'general',
+    round: 0,
+    currentQuestion: '',
+    currentAnswer: '',
+    participants: [],
+    status: 'waiting',
+    lastSurvivors: [],
+    roundParticipants: {},
+    logs: [],
+    allSurvivors: new Set()
+  };
   addLogEntry('🔄 전체 게임 초기화됨 (1라운드부터)');
   io.emit('reset');
   res.json({ message: '게임이 초기화되었습니다.' });
