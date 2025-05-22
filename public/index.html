@@ -2,72 +2,136 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SK AX OX 퀴즈</title>
   <link rel="stylesheet" href="style.css" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-  <div class="overlay">
-    <img src="skax-logo.png" alt="SK AX 로고" class="logo" />
-    <p class="tagline">Future with AI, Powered by SK AX</p>
-    <p class="subtagline">HC2 Group TownHall Meeting</p>
-
-    <!-- 문제 표시 -->
-    <div id="question-box" class="question-box">문제 없음</div>
-
-    <p id="participant-count" style="font-weight: bold; margin-top: 10px;">
-      현재 참여자 수: 0명
-    </p>
-
-    <!-- 이름 입력 -->
-    <input type="text" id="username" placeholder="이름을 입력하세요" />
-
-    <!-- OX 버튼 -->
-    <div style="display: flex; gap: 20px; justify-content: center; margin-top: 20px;">
-      <button onclick="submitAnswer('O')" style="font-size: 1.5rem; background: none; border: none; cursor: pointer;" title="O 선택">
-        🟢
-      </button>
-      <button onclick="submitAnswer('X')" style="font-size: 1.5rem; background: none; border: none; cursor: pointer;" title="X 선택">
-        ❌
-      </button>
+  <div class="container">
+    <!-- 헤더 -->
+    <div class="header">
+      <img src="skax-logo.png" alt="SK AX 로고" class="logo" />
+      <h1 class="tagline">Future with AI, Powered by SK AX</h1>
+      <p class="subtagline">HC2 Group TownHall Meeting</p>
     </div>
 
-    <!-- GPT 응답 표시 -->
-    <div id="chat-box" class="chat-box"></div>
+    <!-- 메인 콘텐츠 -->
+    <div class="main-content">
+      <!-- 퀴즈 섹션 -->
+      <div class="quiz-section">
+        <!-- 문제 표시 -->
+        <div class="question-container">
+          <div class="question-label">
+            <i class="fas fa-question-circle"></i> 현재 문제
+          </div>
+          <div id="question-box" class="question-text">문제를 불러오는 중...</div>
+        </div>
 
-    <!-- GPT 질문 입력 -->
-    <div class="chat-input-area" style="display: flex; gap: 10px; margin-top: 10px;">
-      <input type="text" id="chat-input" placeholder="GPT에게 질문하세요..." style="flex: 1; padding: 8px;" />
-      <button onclick="sendMessage()" style="padding: 8px 12px;">전송</button>
+        <!-- 참여자 수 표시 -->
+        <div class="participant-info">
+          <div class="status-indicator">
+            <div class="status-dot"></div>
+            <span>실시간 연결됨</span>
+          </div>
+          <p id="participant-count" class="participant-display">현재 참여자 수: 0명</p>
+        </div>
+
+        <!-- 사용자 입력 -->
+        <div class="user-input">
+          <input type="text" id="username" class="username-input" placeholder="이름을 입력하세요" />
+        </div>
+
+        <!-- OX 버튼 -->
+        <div class="answer-buttons">
+          <button onclick="submitAnswer('O')" class="answer-btn o-btn" title="O 선택">
+            <i class="fas fa-check"></i>
+          </button>
+          <button onclick="submitAnswer('X')" class="answer-btn x-btn" title="X 선택">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <!-- 정답 표시 -->
+        <div id="answer-display" class="answer-display"></div>
+
+        <!-- GPT 채팅 -->
+        <div class="chat-section">
+          <div class="card-title">
+            <i class="fas fa-robot"></i> AI 어시스턴트
+          </div>
+          <div id="chat-box" class="chat-box"></div>
+          <div class="chat-input-area">
+            <input type="text" id="chat-input" class="chat-input" placeholder="GPT에게 질문하세요..." />
+            <button onclick="sendMessage()" class="send-btn">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 사이드바 -->
+      <div class="sidebar">
+        <!-- 생존자 리스트 -->
+        <div class="sidebar-card" id="survivor-box" style="display: none;">
+          <div class="card-title">
+            <i class="fas fa-trophy"></i> 생존자 리스트
+            <span id="survivor-count" class="survivor-badge">0</span>
+          </div>
+          <ul id="survivor-list" class="survivor-grid"></ul>
+        </div>
+
+        <!-- 게임 통계 -->
+        <div class="sidebar-card">
+          <div class="card-title">
+            <i class="fas fa-chart-bar"></i> 게임 현황
+          </div>
+          <div class="stat-item">
+            <span>현재 라운드:</span>
+            <span id="current-round">준비 중</span>
+          </div>
+          <div class="stat-item">
+            <span>총 참여자:</span>
+            <span id="total-participants">0명</span>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <!-- 생존자 박스 -->
-    <div class="survivor-box" id="survivor-box" style="display: none;">
-      <h4>🔥 생존자 리스트 (<span id="survivor-count">0</span>명)</h4>
-      <ul id="survivor-list" class="survivor-grid"></ul>
-    </div>
-
-    <!-- 정답 표시 -->
-    <div id="answer-display" style="margin-top: 20px; font-size: 1.2em; font-weight: bold; color: green;"></div>
   </div>
+
+  <!-- 토스트 알림 -->
+  <div id="toast" class="toast"></div>
 
   <script>
     const socket = io();
     let alreadyShownSurvivorMessage = false;
 
+    // 소켓 이벤트 리스너
     socket.on('newQuestion', (data) => {
       document.getElementById('question-box').innerText = data.question;
       document.getElementById('answer-display').innerText = '';
+      document.getElementById('answer-display').classList.remove('show');
       document.getElementById('participant-count').innerText = '현재 참여자 수: 0명';
       alreadyShownSurvivorMessage = false;
+      
+      // 새 문제 애니메이션
+      const questionContainer = document.querySelector('.question-container');
+      questionContainer.style.animation = 'none';
+      setTimeout(() => {
+        questionContainer.style.animation = 'bounce 0.6s ease';
+      }, 10);
     });
 
     socket.on('participantCount', (count) => {
       document.getElementById('participant-count').innerText = `현재 참여자 수: ${count}명`;
+      document.getElementById('total-participants').innerText = `${count}명`;
     });
 
     socket.on('roundEnded', (data) => {
-      document.getElementById('answer-display').innerText = `✅ 정답: ${data.answer}`;
+      const answerDisplay = document.getElementById('answer-display');
+      answerDisplay.innerText = `✅ 정답: ${data.answer}`;
+      answerDisplay.classList.add('show');
 
       if (alreadyShownSurvivorMessage) return;
       alreadyShownSurvivorMessage = true;
@@ -79,21 +143,31 @@
       renderSurvivors(data.survivors);
     });
 
+    // 초기 데이터 로드
     async function loadQuestion() {
-      const res = await fetch('/question');
-      const data = await res.json();
-      document.getElementById('question-box').innerText = data.question || '문제 없음';
-      document.getElementById('participant-count').innerText = `현재 참여자 수: ${data.participantCount || 0}명`;
+      try {
+        const res = await fetch('/question');
+        const data = await res.json();
+        document.getElementById('question-box').innerText = data.question || '문제 없음';
+        document.getElementById('participant-count').innerText = `현재 참여자 수: ${data.participantCount || 0}명`;
+      } catch (error) {
+        showToast('문제를 불러오는데 실패했습니다.', 'error');
+      }
     }
 
     async function loadSurvivors() {
-      const res = await fetch('/question');
-      const data = await res.json();
-      const raw = data.survivors || '';
-      const survivors = raw.split(',').map(name => name.trim()).filter(Boolean);
-      renderSurvivors(survivors);
+      try {
+        const res = await fetch('/question');
+        const data = await res.json();
+        const raw = data.survivors || '';
+        const survivors = raw.split(',').map(name => name.trim()).filter(Boolean);
+        renderSurvivors(survivors);
+      } catch (error) {
+        console.error('생존자 로드 실패:', error);
+      }
     }
 
+    // 생존자 렌더링
     function renderSurvivors(survivors) {
       const box = document.getElementById('survivor-box');
       const list = document.getElementById('survivor-list');
@@ -108,26 +182,38 @@
       list.innerHTML = '';
       count.innerText = survivors.length;
 
-      const displayLimit = 10;
+      const displayLimit = 12;
       const visibleNames = survivors.slice(0, displayLimit);
 
-      visibleNames.forEach(name => {
+      visibleNames.forEach((name, index) => {
         const li = document.createElement('li');
+        li.className = 'survivor-item';
         li.textContent = name;
+        li.style.animationDelay = `${index * 0.1}s`;
         list.appendChild(li);
       });
 
       if (survivors.length > displayLimit) {
         const li = document.createElement('li');
-        li.style.color = 'gray';
-        li.textContent = `외 ${survivors.length - displayLimit}명 더 있음`;
+        li.className = 'survivor-item more';
+        li.textContent = `외 ${survivors.length - displayLimit}명`;
         list.appendChild(li);
       }
     }
 
+    // 답안 제출
     async function submitAnswer(answer) {
       const name = document.getElementById('username').value.trim();
-      if (!name) return alert('이름을 입력하세요!');
+      if (!name) {
+        showToast('이름을 입력하세요!', 'warning');
+        document.getElementById('username').focus();
+        return;
+      }
+
+      const button = event.target.closest('.answer-btn');
+      button.style.pointerEvents = 'none';
+      const originalContent = button.innerHTML;
+      button.innerHTML = '<div class="loading"></div>';
 
       try {
         const res = await fetch('/submit', {
@@ -137,18 +223,24 @@
         });
 
         if (res.status === 409) {
-          alert('이미 제출하셨습니다!');
+          showToast('이미 제출하셨습니다!', 'warning');
         } else if (res.status === 403) {
-          alert('생존자만 제출할 수 있습니다.');
+          showToast('생존자만 제출할 수 있습니다.', 'error');
         } else {
-          alert('제출 완료!');
+          showToast(`${answer} 답안이 제출되었습니다!`, 'success');
         }
       } catch (err) {
-        alert('서버 오류: 제출 실패');
+        showToast('서버 오류: 제출 실패', 'error');
         console.error(err);
+      } finally {
+        setTimeout(() => {
+          button.innerHTML = originalContent;
+          button.style.pointerEvents = 'auto';
+        }, 1000);
       }
     }
 
+    // GPT 메시지 전송
     async function sendMessage() {
       const input = document.getElementById('chat-input');
       const message = input.value.trim();
@@ -156,7 +248,20 @@
 
       input.value = '';
       const chat = document.getElementById('chat-box');
-      chat.innerHTML += `<div>🙋 ${message}</div>`;
+      
+      // 사용자 메시지 표시
+      const userMessage = document.createElement('div');
+      userMessage.className = 'chat-message user';
+      userMessage.innerHTML = `<i class="fas fa-user"></i> ${message}`;
+      chat.appendChild(userMessage);
+      chat.scrollTop = chat.scrollHeight;
+
+      // 로딩 메시지 표시
+      const loadingMessage = document.createElement('div');
+      loadingMessage.className = 'chat-message bot';
+      loadingMessage.innerHTML = `<i class="fas fa-robot"></i> <div class="loading"></div> 답변을 생각하고 있습니다...`;
+      chat.appendChild(loadingMessage);
+      chat.scrollTop = chat.scrollHeight;
 
       try {
         const res = await fetch('/ask-gpt', {
@@ -166,16 +271,56 @@
         });
 
         const data = await res.json();
-        chat.innerHTML += `<div>🤖 ${data.reply}</div>`;
+        
+        // 로딩 메시지 제거
+        chat.removeChild(loadingMessage);
+        
+        // GPT 응답 표시
+        const botMessage = document.createElement('div');
+        botMessage.className = 'chat-message bot';
+        botMessage.innerHTML = `<i class="fas fa-robot"></i> ${data.reply}`;
+        chat.appendChild(botMessage);
+        chat.scrollTop = chat.scrollHeight;
       } catch (err) {
-        chat.innerHTML += `<div style="color:red;">GPT 응답 실패</div>`;
-        console.error(err);
+        chat.removeChild(loadingMessage);
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'chat-message bot';
+        errorMessage.innerHTML = `<i class="fas fa-exclamation-triangle"></i> 죄송합니다. 응답을 가져올 수 없습니다.`;
+        errorMessage.style.color = '#ff6b6b';
+        chat.appendChild(errorMessage);
+        chat.scrollTop = chat.scrollHeight;
       }
     }
 
+    // 토스트 알림 표시
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast ${type} show`;
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // 엔터키 이벤트
+    document.getElementById('chat-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+
+    document.getElementById('username').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        document.querySelector('.answer-btn').focus();
+      }
+    });
+
+    // 초기화
     window.onload = () => {
       loadQuestion();
-      loadSurvivors(); // ✅ 생존자도 새로고침 시 유지
+      loadSurvivors();
+      showToast('SK AX OX 퀴즈에 오신 것을 환영합니다! 🎉', 'success');
     };
   </script>
 </body>
