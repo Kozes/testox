@@ -110,7 +110,7 @@ body {
     align-items: center;
 }
 
-/* 참여자 정보 */
+/* 참여자 정보 - 수정된 부분 */
 .participant-info {
     margin-bottom: 25px;
     text-align: center;
@@ -120,11 +120,13 @@ body {
     font-size: 1.2rem;
     font-weight: bold;
     margin-top: 10px;
-    background: linear-gradient(45deg, #706fd3, #40407a);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    filter: drop-shadow(0 0 10px rgba(112, 111, 211, 0.5));
+    color: #00d2ff !important; /* 밝은 시안색으로 변경 */
+    text-shadow: 0 0 15px rgba(0, 210, 255, 0.8); /* 강한 글로우 효과 */
+    filter: none; /* 기존 필터 제거 */
+    background: none !important; /* 그라데이션 배경 제거 */
+    -webkit-background-clip: unset !important;
+    -webkit-text-fill-color: unset !important;
+    background-clip: unset !important;
 }
 
 /* 사용자 입력 */
@@ -285,16 +287,23 @@ body {
     margin-left: auto;
 }
 
-/* 통계 아이템 */
+/* 통계 아이템 - 수정된 부분 */
 .stat-item {
     display: flex;
     justify-content: space-between;
     margin-bottom: 10px;
     font-size: 0.9rem;
+    color: #ffffff; /* 하얀색으로 변경 */
 }
 
 .stat-item:last-child {
     margin-bottom: 0;
+}
+
+.stat-item span:last-child {
+    color: #00d2ff; /* 값 부분은 시안색으로 */
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(0, 210, 255, 0.6);
 }
 
 /* 생존자 리스트 */
@@ -539,7 +548,6 @@ body {
 
 /* 기존 레거시 클래스들 호환성 유지 */
 .overlay {
-    /* 다크 테마로 변환된 컨테이너 스타일 */
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(15px);
     border-radius: 20px;
@@ -551,7 +559,6 @@ body {
     margin: 20px auto;
 }
 
-/* 기존 클래스명들을 다크 테마로 오버라이드 */
 .question-box {
     background: rgba(255,255,255,0.1);
     border-radius: 15px;
@@ -595,7 +602,6 @@ input[type="text"]:focus {
     box-shadow: 0 0 20px rgba(255,255,255,0.3);
 }
 
-/* 기존 OX 버튼 스타일 오버라이드 */
 .ox-buttons {
     display: flex;
     gap: 20px;
@@ -632,7 +638,6 @@ input[type="text"]:focus {
     box-shadow: 0 6px 20px rgba(255, 65, 108, 0.6);
 }
 
-/* 생존자 박스 */
 .survivor-box {
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(15px);
@@ -684,7 +689,6 @@ input[type="text"]:focus {
     box-shadow: 0 4px 12px rgba(112, 111, 211, 0.3);
 }
 
-/* 채팅 관련 */
 .chat-box {
     background: rgba(0,0,0,0.3);
     border-radius: 10px;
@@ -733,7 +737,6 @@ input[type="text"]:focus {
     background: linear-gradient(135deg, #706fd3, #40407a, #2c2c54);
 }
 
-/* 일반 버튼 스타일 */
 button {
     padding: 10px 14px;
     margin: 5px 2px;
@@ -752,19 +755,20 @@ button:hover {
     box-shadow: 0 6px 20px rgba(112, 111, 211, 0.6);
 }
 
-/* 참여자 수 표시 */
+/* 참여자 수 표시 - 수정된 부분 */
 #participant-count {
     font-weight: bold;
     margin-top: 10px;
-    background: linear-gradient(45deg, #706fd3, #40407a);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    filter: drop-shadow(0 0 10px rgba(112, 111, 211, 0.5));
-    font-size: 1.1rem;
+    color: #00d2ff !important; /* 밝은 시안색, !important로 우선순위 */
+    text-shadow: 0 0 15px rgba(0, 210, 255, 0.8);
+    font-size: 1.2rem;
+    background: none !important; /* 그라데이션 배경 제거 */
+    -webkit-background-clip: unset !important;
+    -webkit-text-fill-color: unset !important;
+    background-clip: unset !important;
+    filter: none !important;
 }
 
-/* 정답 표시 */
 #answer-display {
     margin-top: 20px;
     font-size: 1.4rem;
