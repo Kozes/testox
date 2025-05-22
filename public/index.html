@@ -115,17 +115,34 @@
       document.getElementById('participant-count').innerText = '현재 참여자 수: 0명';
       alreadyShownSurvivorMessage = false;
       
+      // 라운드 정보 업데이트
+      if (data.round) {
+        const currentRoundElement = document.getElementById('current-round');
+        if (currentRoundElement) {
+          currentRoundElement.innerText = `${data.round}라운드`;
+        }
+      }
+      
       // 새 문제 애니메이션
       const questionContainer = document.querySelector('.question-container');
       questionContainer.style.animation = 'none';
       setTimeout(() => {
         questionContainer.style.animation = 'bounce 0.6s ease';
       }, 10);
+      
+      // 라운드 정보 다시 로드
+      setTimeout(() => {
+        loadQuestion();
+      }, 100);
     });
 
     socket.on('participantCount', (count) => {
+      console.log('참여자 수 업데이트:', count);
       document.getElementById('participant-count').innerText = `현재 참여자 수: ${count}명`;
-      document.getElementById('total-participants').innerText = `${count}명`;
+      const totalElement = document.getElementById('total-participants');
+      if (totalElement) {
+        totalElement.innerText = `${count}명`;
+      }
     });
 
     socket.on('roundEnded', (data) => {
@@ -143,14 +160,47 @@
       renderSurvivors(data.survivors);
     });
 
+    // 소켓 연결 시 즉시 참여자 수 요청
+    socket.on('connect', () => {
+      console.log('서버에 연결됨');
+      setTimeout(() => {
+        loadQuestion();
+        loadSurvivors();
+      }, 100);
+    });
+
     // 초기 데이터 로드
     async function loadQuestion() {
       try {
         const res = await fetch('/question');
         const data = await res.json();
+        
+        // 문제 표시
         document.getElementById('question-box').innerText = data.question || '문제 없음';
-        document.getElementById('participant-count').innerText = `현재 참여자 수: ${data.participantCount || 0}명`;
+        
+        // 참여자 수 표시
+        const participantCount = data.participantCount || 0;
+        document.getElementById('participant-count').innerText = `현재 참여자 수: ${participantCount}명`;
+        document.getElementById('total-participants').innerText = `${participantCount}명`;
+        
+        // 현재 라운드 표시
+        const currentRoundElement = document.getElementById('current-round');
+        if (currentRoundElement) {
+          if (data.currentRound && data.currentRound > 0) {
+            currentRoundElement.innerText = `${data.currentRound}라운드`;
+          } else {
+            currentRoundElement.innerText = '준비 중';
+          }
+        }
+        
+        console.log('로드된 데이터:', { 
+          participantCount, 
+          currentRound: data.currentRound,
+          status: data.status 
+        });
+        
       } catch (error) {
+        console.error('데이터 로드 실패:', error);
         showToast('문제를 불러오는데 실패했습니다.', 'error');
       }
     }
@@ -321,6 +371,11 @@
       loadQuestion();
       loadSurvivors();
       showToast('SK AX OX 퀴즈에 오신 것을 환영합니다! 🎉', 'success');
+      
+      // 1초 후 다시 한번 참여자 수 확인
+      setTimeout(() => {
+        loadQuestion();
+      }, 1000);
     };
   </script>
 </body>
