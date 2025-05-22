@@ -117,7 +117,20 @@ app.post('/submit', (req, res) => {
   if (gameState.participants.find(p => p.name.trim().toLowerCase() === submittedName)) {
     return res.status(409).json({ message: '이미 제출하셨습니다.' });
   }
+  
+app.post('/ask-gpt', async (req, res) => {
+  const { message } = req.body;
+  if (!message) return res.status(400).json({ error: '메시지가 없습니다.' });
 
+  try {
+    const reply = await askQuestionToGPT(message);
+    res.json({ reply });
+  } catch (err) {
+    console.error('GPT 오류:', err);
+    res.status(500).json({ error: 'GPT 응답 실패' });
+  }
+});
+  
   if (gameState.round > 1) {
     const survivors = gameState.lastSurvivors.map(n => n.trim().toLowerCase());
     if (!survivors.includes(submittedName)) {
