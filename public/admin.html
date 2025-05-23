@@ -166,7 +166,7 @@
       display: inline-block;
     }
 
-    /* 패스워드 모달 */
+    /* 패스워드 모달 - 정렬 개선 */
     .password-modal {
       position: fixed;
       top: 0;
@@ -178,43 +178,111 @@
       align-items: center;
       justify-content: center;
       z-index: 9999;
+      padding: 20px;
     }
 
     .password-content {
       background: linear-gradient(135deg, #706fd3, #40407a);
-      padding: 40px;
+      padding: 40px 30px;
       border-radius: 20px;
       text-align: center;
-      max-width: 400px;
-      width: 90%;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      max-width: 450px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      animation: modalSlideIn 0.5s ease-out;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
     }
 
     .password-content h2 {
-      margin-bottom: 20px;
+      margin-bottom: 10px;
       color: white;
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
+
+    .password-content p {
+      margin-bottom: 25px;
+      color: rgba(255,255,255,0.9);
+      font-size: 1rem;
+      line-height: 1.4;
     }
 
     .password-input {
       width: 100%;
-      padding: 12px 15px;
+      padding: 12px 20px;
       border: none;
       border-radius: 25px;
       font-size: 1rem;
-      margin-bottom: 20px;
+      margin-bottom: 25px;
       text-align: center;
       outline: none;
+      background: rgba(255,255,255,0.95);
+      color: #333;
+      box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+      max-width: 300px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .password-input:focus {
+      transform: scale(1.02);
+      box-shadow: inset 0 2px 10px rgba(0,0,0,0.1), 0 0 20px rgba(255,255,255,0.3);
+    }
+
+    .password-input::placeholder {
+      color: #666;
+    }
+
+    .password-buttons {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
     }
 
     .password-btn {
       background: linear-gradient(135deg, #ffd700, #ffb347);
       color: #333;
-      padding: 10px 30px;
+      padding: 12px 20px;
       border: none;
       border-radius: 25px;
       font-weight: bold;
       cursor: pointer;
-      margin: 0 10px;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+      min-width: 110px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .password-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+    }
+
+    .password-btn.secondary {
+      background: linear-gradient(135deg, #ff416c, #ff4b2b);
+      color: white;
+      box-shadow: 0 4px 15px rgba(255, 65, 108, 0.3);
+    }
+
+    .password-btn.secondary:hover {
+      box-shadow: 0 6px 20px rgba(255, 65, 108, 0.4);
     }
 
     /* ✅ NEW: 실시간 투표 현황 */
@@ -278,12 +346,139 @@
       font-weight: bold;
     }
 
+    /* ✅ NEW: 필터 버튼 스타일 */
+    .filter-buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      border-radius: 15px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      background: linear-gradient(135deg, #706fd3, #40407a);
+      border-color: #706fd3;
+      transform: translateY(-1px);
+    }
+
+    .round-select {
+      padding: 6px 10px;
+      border-radius: 15px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .round-select option {
+      background: #2c3e50;
+      color: white;
+    }
+
+    .participant-stats {
+      margin-bottom: 10px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      text-align: center;
+      color: #00d2ff;
+    }
+
+    /* ✅ NEW: 참가자 아이템 개선 */
+    #participant-list li {
+      background: rgba(255,255,255,0.1);
+      margin-bottom: 8px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      border-left: 4px solid transparent;
+      transition: all 0.3s ease;
+    }
+
+    #participant-list li:hover {
+      background: rgba(255,255,255,0.15);
+      transform: translateX(2px);
+    }
+
+    #participant-list li.survived {
+      border-left-color: #ffd700;
+      background: rgba(255, 215, 0, 0.1);
+    }
+
+    #participant-list li.eliminated {
+      border-left-color: #ff6b6b;
+      background: rgba(255, 107, 107, 0.1);
+    }
+
+    .participant-rounds {
+      font-size: 0.75rem;
+      opacity: 0.8;
+      margin-top: 4px;
+    }
+
+    .round-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      margin: 1px;
+      border-radius: 10px;
+      font-size: 0.7rem;
+      font-weight: bold;
+    }
+
+    .round-survived {
+      background: rgba(76, 175, 80, 0.3);
+      color: #4caf50;
+    }
+
+    .round-eliminated {
+      background: rgba(244, 67, 54, 0.3);
+      color: #f44336;
+    }
+
     @media (max-width: 768px) {
       .data-section {
         grid-template-columns: 1fr;
       }
       .button-grid {
         grid-template-columns: 1fr;
+      }
+      
+      .password-content {
+        padding: 30px 20px;
+        max-width: 350px;
+      }
+      
+      .password-input {
+        max-width: 280px;
+        padding: 10px 15px;
+        font-size: 0.9rem;
+      }
+      
+      .password-content h2 {
+        font-size: 1.5rem;
+      }
+      
+      .password-buttons {
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .password-btn {
+        min-width: 100%;
+        font-size: 0.9rem;
+        padding: 10px 16px;
       }
     }
 
@@ -299,13 +494,13 @@
   <div id="password-modal" class="password-modal">
     <div class="password-content">
       <h2>🔒 관리자 인증</h2>
-      <p>SK AX OX 퀴즈 관리자 페이지입니다</p>
+      <p>SK AX OX 퀴즈 관리자 페이지입니다<br>패스워드를 입력해주세요</p>
       <input type="password" id="password-input" class="password-input" placeholder="패스워드를 입력하세요" />
-      <div>
+      <div class="password-buttons">
         <button onclick="checkPassword()" class="password-btn">
           <i class="fas fa-key"></i> 인증
         </button>
-        <button onclick="goToMain()" class="password-btn" style="background: linear-gradient(135deg, #ff416c, #ff4b2b); color: white;">
+        <button onclick="goToMain()" class="password-btn secondary">
           <i class="fas fa-home"></i> 메인으로
         </button>
       </div>
@@ -411,6 +606,28 @@
     <div class="data-section">
       <div class="data-card">
         <h3><i class="fas fa-users"></i> 참가자 리스트</h3>
+        
+        <!-- ✅ NEW: 필터 버튼들 -->
+        <div class="filter-buttons">
+          <button onclick="loadDetailedParticipants('all')" class="filter-btn active" id="filter-all">
+            <i class="fas fa-list"></i> 전체
+          </button>
+          <button onclick="loadDetailedParticipants('survived')" class="filter-btn" id="filter-survived">
+            <i class="fas fa-crown"></i> 현재 생존자
+          </button>
+          <button onclick="loadDetailedParticipants('eliminated')" class="filter-btn" id="filter-eliminated">
+            <i class="fas fa-skull"></i> 탈락자
+          </button>
+          <select id="round-filter" onchange="filterByRound()" class="round-select">
+            <option value="">라운드별 보기</option>
+          </select>
+        </div>
+        
+        <!-- ✅ NEW: 참가자 통계 -->
+        <div class="participant-stats">
+          <span id="stats-text">총 0명 | 생존 0명 | 탈락 0명</span>
+        </div>
+        
         <ul id="participant-list"></ul>
       </div>
       <div class="data-card">
@@ -460,7 +677,7 @@
         document.getElementById('password-modal').style.display = 'none';
         document.getElementById('admin-content').style.display = 'block';
         showSuccessToast('인증 성공! 관리자 페이지에 오신 것을 환영합니다.');
-        loadParticipants();
+        loadDetailedParticipants('all'); // ✅ 상세 참가자 로드로 변경
         loadLogs();
         loadVoteStatus(); // ✅ 투표 현황 로드
       } else {
@@ -544,7 +761,7 @@
       const res = await fetch('/admin/end', { method: 'POST' });
       const data = await res.json();
       log(`🛑 ${data.message} - 생존자: ${data.survivors.join(', ')}`);
-      loadParticipants();
+      loadDetailedParticipants('all'); // ✅ 상세 참가자 로드로 변경
     }
 
     async function setQuizType(type) {
@@ -566,6 +783,10 @@
       updateQuizTypeLabel();
       document.getElementById('participant-list').innerHTML = '';
       document.getElementById('vote-status-admin').style.display = 'none';
+      // ✅ 필터 초기화
+      setActiveFilter('all');
+      document.getElementById('round-filter').innerHTML = '<option value="">라운드별 보기</option>';
+      document.getElementById('stats-text').textContent = '총 0명 | 생존 0명 | 탈락 0명';
     }
 
     async function sendCoreQuestion(version) {
@@ -612,6 +833,114 @@
       }
     }
 
+    // ✅ NEW: 상세 참가자 리스트 로드 (필터링 지원)
+    async function loadDetailedParticipants(filter = 'all') {
+      try {
+        const res = await fetch(`/admin/participants-detailed?filter=${filter}`);
+        const data = await res.json();
+        
+        renderDetailedParticipants(data.participants);
+        updateParticipantStats(data);
+        updateRoundFilter(data.availableRounds);
+        setActiveFilter(filter);
+        
+      } catch (error) {
+        log('❌ 상세 참가자 로드 실패');
+      }
+    }
+
+    // ✅ NEW: 상세 참가자 렌더링
+    function renderDetailedParticipants(participants) {
+      const ul = document.getElementById('participant-list');
+      ul.innerHTML = '';
+      
+      if (participants.length === 0) {
+        ul.innerHTML = '<li style="text-align: center; opacity: 0.6;">참가자가 없습니다.</li>';
+        return;
+      }
+      
+      participants.forEach(p => {
+        const li = document.createElement('li');
+        li.className = p.status;
+        
+        // 라운드 뱃지 생성
+        const roundBadges = p.survivedRounds.map(round => 
+          `<span class="round-badge round-survived">${round}R</span>`
+        ).join('');
+        
+        const eliminatedBadge = p.eliminatedAt ? 
+          `<span class="round-badge round-eliminated">❌${p.eliminatedAt}R</span>` : '';
+        
+        const statusIcon = p.status === 'survived' ? 
+          '<i class="fas fa-crown" style="color: #ffd700;"></i>' : 
+          '<i class="fas fa-skull" style="color: #ff6b6b;"></i>';
+        
+        const statusText = p.status === 'survived' ? 
+          `현재 생존 (${p.totalRounds}라운드 참여)` : 
+          `${p.eliminatedAt}라운드 탈락 (총 ${p.totalRounds}라운드 참여)`;
+        
+        li.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              ${statusIcon} <strong>${p.name}</strong>
+              <span style="margin-left: 10px; opacity: 0.8;">${statusText}</span>
+            </div>
+          </div>
+          <div class="participant-rounds">
+            참여 라운드: ${roundBadges} ${eliminatedBadge}
+          </div>
+        `;
+        ul.appendChild(li);
+      });
+    }
+
+    // ✅ NEW: 참가자 통계 업데이트
+    function updateParticipantStats(data) {
+      const statsText = `총 ${data.totalParticipants}명 | 생존 ${data.currentSurvivors}명 | 탈락 ${data.totalParticipants - data.currentSurvivors}명`;
+      document.getElementById('stats-text').textContent = statsText;
+    }
+
+    // ✅ NEW: 라운드 필터 업데이트
+    function updateRoundFilter(availableRounds) {
+      const select = document.getElementById('round-filter');
+      const currentValue = select.value;
+      
+      select.innerHTML = '<option value="">라운드별 보기</option>';
+      availableRounds.forEach(round => {
+        const option = document.createElement('option');
+        option.value = `round-${round}`;
+        option.textContent = `${round}라운드`;
+        select.appendChild(option);
+      });
+      
+      // 이전 선택값 복원
+      if (currentValue && document.querySelector(`option[value="${currentValue}"]`)) {
+        select.value = currentValue;
+      }
+    }
+
+    // ✅ NEW: 활성 필터 설정
+    function setActiveFilter(filter) {
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      const targetBtn = document.getElementById(`filter-${filter}`);
+      if (targetBtn) {
+        targetBtn.classList.add('active');
+      }
+    }
+
+    // ✅ NEW: 라운드별 필터링
+    function filterByRound() {
+      const select = document.getElementById('round-filter');
+      const selectedValue = select.value;
+      
+      if (selectedValue) {
+        loadDetailedParticipants(selectedValue);
+        // 다른 필터 버튼 비활성화
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      }
+    }
+
+    // ✅ 기존 함수는 호환성을 위해 유지
     async function loadParticipants() {
       try {
         const res = await fetch('/admin/participants');
@@ -678,13 +1007,42 @@
 
     // 소켓 이벤트
     socket.on('newParticipant', (data) => {
-      renderParticipants(data);
+      // ✅ 기존 필터 유지하면서 새로고침
+      const activeFilter = document.querySelector('.filter-btn.active')?.id?.replace('filter-', '') || 'all';
+      const roundFilter = document.getElementById('round-filter').value;
+      
+      if (roundFilter) {
+        loadDetailedParticipants(roundFilter);
+      } else {
+        loadDetailedParticipants(activeFilter);
+      }
+      
       log(`👤 새 참가자 등록됨 (총 ${data.length}명)`);
     });
 
     // ✅ 새 문제 시 투표 현황 숨기기
     socket.on('newQuestion', () => {
       document.getElementById('vote-status-admin').style.display = 'none';
+    });
+
+    // ✅ NEW: 게임 초기화 시 어드민 페이지도 초기화
+    socket.on('reset', () => {
+      // 페이지 상태 초기화
+      document.getElementById('participant-list').innerHTML = '';
+      document.getElementById('vote-status-admin').style.display = 'none';
+      
+      // 필터 초기화
+      setActiveFilter('all');
+      document.getElementById('round-filter').innerHTML = '<option value="">라운드별 보기</option>';
+      document.getElementById('stats-text').textContent = '총 0명 | 생존 0명 | 탈락 0명';
+      
+      // 퀴즈 타입 라벨 초기화
+      updateQuizTypeLabel();
+      
+      // 토스트 알림
+      showSuccessToast('🔄 게임이 초기화되었습니다!');
+      
+      log('🔄 관리자 페이지 초기화 완료');
     });
   </script>
 </body>
