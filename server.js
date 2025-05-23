@@ -41,7 +41,9 @@ let gameState = {
   drawWinners: [],
   // ✅ NEW: 라운드별 생존/탈락 추적
   roundHistory: {}, // { participantName: { rounds: [1,2,3], eliminatedAt: 4 } }
-  participantDetails: {} // { participantName: { totalRounds: 3, status: 'survived/eliminated', lastRound: 3 } }
+  participantDetails: {}, // { participantName: { totalRounds: 3, status: 'survived/eliminated', lastRound: 3 } }
+  currentExplanation: null, // ✅ 팀 퀴즈 해설 임시 저장
+  gameReady: true, // ✅ 게임 준비 상태
 };
 
 function addLogEntry(message) {
@@ -51,10 +53,48 @@ function addLogEntry(message) {
   if (gameState.logs.length > 100) gameState.logs.shift();
 }
 
+// ✅ NEW: 해설 생성 함수 추가
+async function generateExplanation(question, answer) {
+  try {
+    // 팀 퀴즈인 경우 이미 해설이 포함되어 있으므로 바로 반환
+    if (gameState.currentExplanation) {
+      const explanation = gameState.currentExplanation;
+      gameState.currentExplanation = null; // 사용 후 초기화
+      return explanation;
+    }
+    
+    const prompt = `
+다음 OX 퀴즈의 해설을 작성해주세요:
+
+문제: ${question}
+정답: ${answer}
+
+요구사항:
+- 왜 ${answer}가 정답인지 명확하게 설명
+- 2-3문장으로 간결하게 작성
+- 관련된 흥미로운 사실이나 배경 지식 포함
+- 친근하고 이해하기 쉬운 톤으로 작성
+- 단순히 "정답은 ${answer}입니다"와 같은 형식은 피할 것`;
+
+    const result = await askQuestionToGPT(prompt);
+    return result.trim();
+  } catch (error) {
+    console.error('해설 생성 실패:', error);
+    return `정답은 ${answer}입니다. ${answer === 'O' ? '이 내용은 사실입니다.' : '이 내용은 사실이 아닙니다.'}`;
+  }
+}
+
 const getQuestionForCurrentType = async () => {
-  return gameState.quizType === 'team'
+  const result = gameState.quizType === 'team'
     ? await getTeamOXQuestion()
     : await generateOXQuestion();
+  
+  // 팀 퀴즈의 경우 해설을 임시 저장
+  if (gameState.quizType === 'team' && result.explanation) {
+    gameState.currentExplanation = result.explanation;
+  }
+  
+  return result;
 };
 
 // ✅ 실시간 투표 현황 업데이트 함수 강화
@@ -117,6 +157,7 @@ app.post('/admin/start', async (req, res) => {
   gameState.round = 1;
   gameState.participants = [];
   resetVoteTracking(); // ✅ 투표 추적 초기화
+  gameState.gameReady = true; // ✅ 게임 준비 상태 설정
   
   const q = await getQuestionForCurrentType();
   gameState.currentQuestion = q.question;
@@ -133,6 +174,9 @@ app.post('/admin/start', async (req, res) => {
 });
 
 app.post('/admin/next', async (req, res) => {
+  // ✅ 게임 준비 상태를 true로 설정
+  gameState.gameReady = true;
+  
   gameState.round += 1;
   gameState.participants = [];
   resetVoteTracking(); // ✅ 투표 추적 초기화
@@ -168,10 +212,12 @@ app.post('/admin/core-question', (req, res) => {
   gameState.round += 1;
   gameState.participants = [];
   resetVoteTracking(); // ✅ 투표 추적 초기화
+  gameState.gameReady = true; // ✅ 게임 준비 상태 설정
   
   gameState.currentQuestion = selected.question;
   gameState.currentAnswer = selected.answer;
   gameState.status = 'active';
+  gameState.currentExplanation = null; // ✅ 핵심 퀴즈는 해설 없음
   addLogEntry(`💡 핵심퀴즈 ${version} 출제됨 - ${selected.question}`);
 
   io.emit('newQuestion', { 
@@ -228,6 +274,9 @@ app.post('/submit', (req, res) => {
 });
 
 app.post('/admin/end', async (req, res) => {
+  // ✅ 게임 준비 상태를 false로 설정
+  gameState.gameReady = false;
+  
   const survivors = gameState.participants.filter(p =>
     p.answer.trim().toUpperCase() === gameState.currentAnswer.trim().toUpperCase()
   );
@@ -438,20 +487,24 @@ app.get('/admin/logs', (req, res) => {
 });
 
 app.get('/question', (req, res) => {
+  // ✅ 게임 준비 상태에 따라 다른 메시지 표시
+  const questionText = gameState.currentQuestion || 
+    (gameState.gameReady ? '문제 없음' : '🎯 라운드 준비중...');
+  
   res.json({
-    question: gameState.currentQuestion || '문제 없음',
+    question: questionText,
     status: gameState.status,
     participantCount: gameState.participants.length,
     currentRound: gameState.round,
     survivors: Array.isArray(gameState.lastSurvivors)
       ? gameState.lastSurvivors.join(', ')
       : '',
-    // ✅ 클라이언트에서도 투표 현황 확인 가능
     voteStatus: {
       oCount: gameState.currentVotes.O.count,
       xCount: gameState.currentVotes.X.count,
       totalSubmitted: gameState.submittedUsers.size
-    }
+    },
+    gameReady: gameState.gameReady // ✅ 준비 상태 전송
   });
 });
 
@@ -490,7 +543,9 @@ app.post('/admin/reset', (req, res) => {
     isDrawing: false,
     drawWinners: [],
     roundHistory: {},
-    participantDetails: {}
+    participantDetails: {},
+    currentExplanation: null,
+    gameReady: true
   };
   addLogEntry('🔄 전체 게임 초기화됨 (1라운드부터)');
   io.emit('reset');
