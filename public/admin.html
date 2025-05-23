@@ -217,6 +217,67 @@
       margin: 0 10px;
     }
 
+    /* ✅ NEW: 실시간 투표 현황 */
+    .vote-status-card {
+      background: rgba(255,255,255,0.08);
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .vote-progress {
+      margin: 10px 0;
+    }
+
+    .vote-bar {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      gap: 10px;
+    }
+
+    .vote-option {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+    }
+
+    .o-option {
+      background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+    }
+
+    .x-option {
+      background: linear-gradient(135deg, #ff416c, #ff4b2b);
+    }
+
+    .progress-bar {
+      flex: 1;
+      height: 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      transition: width 0.5s ease;
+    }
+
+    .o-fill { background: linear-gradient(90deg, #00d2ff, #3a7bd5); }
+    .x-fill { background: linear-gradient(90deg, #ff416c, #ff4b2b); }
+
+    .vote-count {
+      min-width: 60px;
+      text-align: right;
+      font-weight: bold;
+    }
+
     @media (max-width: 768px) {
       .data-section {
         grid-template-columns: 1fr;
@@ -225,28 +286,11 @@
         grid-template-columns: 1fr;
       }
     }
-  </style>
-    .admin-container {
-      background: white;
-      max-width: 600px;
-      margin: auto;
-      padding: 25px;
-      border-radius: 16px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.1);
-    }
-    button {
-      margin: 10px 5px;
-      padding: 10px 16px;
-      font-size: 1em;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      background: #eee;
-    }
-    .log-entry {
-      border-top: 1px solid #ddd;
-      padding: 6px;
-      text-align: left;
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
     }
   </style>
 </head>
@@ -320,14 +364,45 @@
       <div id="quiz-type-label">선택된 퀴즈 타입: 없음</div>
     </div>
 
+    <!-- ✅ NEW: 실시간 투표 현황 -->
+    <div class="control-section">
+      <h3 class="section-title">
+        <i class="fas fa-chart-pie"></i> 실시간 투표 현황
+      </h3>
+      <div id="vote-status-admin" class="vote-status-card" style="display: none;">
+        <div class="vote-progress">
+          <div class="vote-bar">
+            <div class="vote-option o-option">O</div>
+            <div class="progress-bar">
+              <div id="admin-o-progress" class="progress-fill o-fill" style="width: 0%;"></div>
+            </div>
+            <div class="vote-count" id="admin-o-count">0명 (0%)</div>
+          </div>
+          <div class="vote-bar">
+            <div class="vote-option x-option">X</div>
+            <div class="progress-bar">
+              <div id="admin-x-progress" class="progress-fill x-fill" style="width: 0%;"></div>
+            </div>
+            <div class="vote-count" id="admin-x-count">0명 (0%)</div>
+          </div>
+        </div>
+        <div style="text-align: center; margin-top: 10px; opacity: 0.8;">
+          <span id="admin-vote-summary">0명 / 0명 참여</span>
+        </div>
+      </div>
+    </div>
+
     <!-- 생존자 관리 -->
     <div class="control-section">
       <h3 class="section-title">
         <i class="fas fa-trophy"></i> 생존자 관리
       </h3>
       <div class="button-grid">
-        <button onclick="drawWinner()" class="btn-special">
-          <i class="fas fa-dice"></i> 생존자 추첨
+        <button onclick="drawWinners(1)" class="btn-special">
+          <i class="fas fa-dice"></i> 생존자 1명 추첨
+        </button>
+        <button onclick="drawWinners(3)" class="btn-special">
+          <i class="fas fa-dice"></i> 생존자 3명 추첨
         </button>
       </div>
     </div>
@@ -345,9 +420,36 @@
     </div>
   </div>
 
-   <script>
+  <script>
     const socket = io();
-    const ADMIN_PASSWORD = "skax2024"; // 원하는 패스워드로 변경 가능
+    const ADMIN_PASSWORD = "102030";
+
+    // ✅ NEW: 관리자용 실시간 투표 현황 수신
+    socket.on('adminVoteUpdate', (data) => {
+      updateAdminVoteStatus(data);
+    });
+
+    // ✅ NEW: 관리자 투표 현황 업데이트
+    function updateAdminVoteStatus(data) {
+      const statusDiv = document.getElementById('vote-status-admin');
+      
+      if (data.totalParticipants > 0) {
+        statusDiv.style.display = 'block';
+        
+        // 진행률 업데이트
+        document.getElementById('admin-o-progress').style.width = data.oPercentage + '%';
+        document.getElementById('admin-x-progress').style.width = data.xPercentage + '%';
+        
+        // 카운트 업데이트
+        document.getElementById('admin-o-count').textContent = `${data.votes.O.count}명 (${data.oPercentage}%)`;
+        document.getElementById('admin-x-count').textContent = `${data.votes.X.count}명 (${data.xPercentage}%)`;
+        
+        // 전체 현황
+        document.getElementById('admin-vote-summary').textContent = `${data.totalSubmitted}명 / ${data.totalParticipants}명 참여`;
+      } else {
+        statusDiv.style.display = 'none';
+      }
+    }
 
     // 패스워드 확인
     function checkPassword() {
@@ -360,6 +462,7 @@
         showSuccessToast('인증 성공! 관리자 페이지에 오신 것을 환영합니다.');
         loadParticipants();
         loadLogs();
+        loadVoteStatus(); // ✅ 투표 현황 로드
       } else {
         input.style.animation = 'shake 0.5s ease-in-out';
         showErrorToast('잘못된 패스워드입니다.');
@@ -462,6 +565,7 @@
       log(`🔄 ${data.message}`);
       updateQuizTypeLabel();
       document.getElementById('participant-list').innerHTML = '';
+      document.getElementById('vote-status-admin').style.display = 'none';
     }
 
     async function sendCoreQuestion(version) {
@@ -474,17 +578,37 @@
       log(`💡 ${data.message}`);
     }
 
-    // ✅ 생존자 추첨 기능
-    async function drawWinner() {
-      const res = await fetch('/admin/draw', { method: 'POST' });
-      const data = await res.json();
-      
-      if (res.ok) {
-        log(`🎉 추첨 당첨자: ${data.winner} (총 ${data.totalSurvivors}명 중)`);
-        showSuccessToast(`🎉 당첨자: ${data.winner}`);
-      } else {
-        log(`⚠️ 추첨 실패: ${data.message}`);
-        showErrorToast(data.message);
+    // ✅ 생존자 추첨 기능 (수정됨)
+    async function drawWinners(count = 1) {
+      try {
+        const res = await fetch('/admin/draw-winners', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ count })
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          log(`🎉 추첨 완료: ${data.winners.join(', ')} (총 ${data.totalSurvivors}명 중)`);
+          showSuccessToast(`🎉 당첨자: ${data.winners.join(', ')}`);
+        } else {
+          log(`⚠️ 추첨 실패: ${data.message}`);
+          showErrorToast(data.message);
+        }
+      } catch (error) {
+        log('❌ 추첨 요청 실패');
+        showErrorToast('추첨 요청에 실패했습니다.');
+      }
+    }
+
+    // ✅ NEW: 투표 현황 로드
+    async function loadVoteStatus() {
+      try {
+        const res = await fetch('/admin/vote-status');
+        const data = await res.json();
+        updateAdminVoteStatus(data);
+      } catch (error) {
+        console.error('투표 현황 로드 실패:', error);
       }
     }
 
@@ -510,7 +634,6 @@
           div.innerText = msg;
           box.appendChild(div);
         });
-        // 스크롤을 맨 아래로
         box.scrollTop = box.scrollHeight;
       } catch (error) {
         log('❌ 로그 로드 실패');
@@ -559,16 +682,10 @@
       log(`👤 새 참가자 등록됨 (총 ${data.length}명)`);
     });
 
-    // CSS 애니메이션 추가
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-10px); }
-        75% { transform: translateX(10px); }
-      }
-    `;
-    document.head.appendChild(style);
+    // ✅ 새 문제 시 투표 현황 숨기기
+    socket.on('newQuestion', () => {
+      document.getElementById('vote-status-admin').style.display = 'none';
+    });
   </script>
 </body>
 </html>
