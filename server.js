@@ -29,7 +29,16 @@ let gameState = {
   lastSurvivors: [],
   roundParticipants: {},
   logs: [],
-  allSurvivors: new Set() // ✅ 생존자 누적 저장용 Set 추가
+  allSurvivors: new Set(),
+  // ✅ 개인정보 보호: 이름은 저장하지 않고 카운트만
+  currentVotes: { 
+    O: { count: 0 }, 
+    X: { count: 0 } 
+  },
+  submittedUsers: new Set(),
+  // ✅ 추첨 기능을 위한 상태
+  isDrawing: false,
+  drawWinners: []
 };
 
 function addLogEntry(message) {
@@ -45,16 +54,48 @@ const getQuestionForCurrentType = async () => {
     : await generateOXQuestion();
 };
 
-// ✅ 소켓 연결 시 현재 상태 전송
+// ✅ 실시간 투표 현황 업데이트 함수 강화
+function updateVoteStatus() {
+  const voteData = {
+    votes: gameState.currentVotes,
+    totalSubmitted: gameState.submittedUsers.size,
+    totalParticipants: gameState.participants.length,
+    // ✅ 퍼센티지 계산
+    oPercentage: gameState.participants.length > 0 
+      ? Math.round((gameState.currentVotes.O.count / gameState.participants.length) * 100) 
+      : 0,
+    xPercentage: gameState.participants.length > 0 
+      ? Math.round((gameState.currentVotes.X.count / gameState.participants.length) * 100) 
+      : 0
+  };
+  io.emit('voteUpdate', voteData);
+}
+
+// ✅ 투표 현황 초기화 함수 (개인정보 보호)
+function resetVoteTracking() {
+  gameState.currentVotes = { 
+    O: { count: 0 }, 
+    X: { count: 0 } 
+  };
+  gameState.submittedUsers.clear();
+}
+
 io.on('connection', (socket) => {
   console.log('새 클라이언트 연결됨');
   
-  // 연결 즉시 현재 참여자 수 전송
   socket.emit('participantCount', gameState.participants.length);
   
-  // 현재 생존자 리스트도 전송
+  if (gameState.status === 'active') {
+    updateVoteStatus();
+  }
+  
   if (gameState.lastSurvivors && gameState.lastSurvivors.length > 0) {
     socket.emit('survivors', { survivors: gameState.lastSurvivors });
+  }
+  
+  // ✅ 추첨 진행 중이면 알림
+  if (gameState.isDrawing) {
+    socket.emit('drawingInProgress');
   }
   
   socket.on('disconnect', () => {
@@ -71,18 +112,19 @@ app.post('/admin/set-type', (req, res) => {
   } else {
     res.status(400).json({ message: '유효하지 않은 타입' });
   }
-});
+});  
 
 app.post('/admin/start', async (req, res) => {
   gameState.round = 1;
   gameState.participants = [];
+  resetVoteTracking(); // ✅ 투표 추적 초기화
+  
   const q = await getQuestionForCurrentType();
   gameState.currentQuestion = q.question;
   gameState.currentAnswer = q.answer;
   gameState.status = 'active';
   addLogEntry(`게임 시작됨 - ${q.question}`);
 
-  // ✅ 라운드 정보도 함께 전송
   io.emit('newQuestion', { 
     question: q.question,
     round: gameState.round,
@@ -94,23 +136,23 @@ app.post('/admin/start', async (req, res) => {
 app.post('/admin/next', async (req, res) => {
   gameState.round += 1;
   gameState.participants = [];
+  resetVoteTracking(); // ✅ 투표 추적 초기화
+  
   const q = await getQuestionForCurrentType();
   gameState.currentQuestion = q.question;
   gameState.currentAnswer = q.answer;
   gameState.status = 'active';
   addLogEntry(`다음 문제 출제됨 - ${q.question}`);
 
-  // ✅ 라운드 정보도 함께 전송
   io.emit('newQuestion', { 
     question: q.question,
     round: gameState.round,
     status: gameState.status
   });
-  io.emit('survivors', { survivors: gameState.lastSurvivors }); // ✅ 추가
+  io.emit('survivors', { survivors: gameState.lastSurvivors });
   res.json({ message: `문제 ${gameState.round} 출제됨`, question: q.question });
 });
 
-// ✅ 핵심퀴즈 하드코딩 API
 app.post('/admin/core-question', (req, res) => {
   const { version } = req.body;
 
@@ -126,18 +168,19 @@ app.post('/admin/core-question', (req, res) => {
 
   gameState.round += 1;
   gameState.participants = [];
+  resetVoteTracking(); // ✅ 투표 추적 초기화
+  
   gameState.currentQuestion = selected.question;
   gameState.currentAnswer = selected.answer;
   gameState.status = 'active';
   addLogEntry(`💡 핵심퀴즈 ${version} 출제됨 - ${selected.question}`);
 
-  // ✅ 라운드 정보도 함께 전송
   io.emit('newQuestion', { 
     question: selected.question,
     round: gameState.round,
     status: gameState.status
   });
-  io.emit('survivors', { survivors: gameState.lastSurvivors }); // ✅ 생존자 재전송
+  io.emit('survivors', { survivors: gameState.lastSurvivors });
   res.json({ message: `핵심퀴즈 ${version} 출제됨`, question: selected.question });
 });
 
@@ -163,14 +206,25 @@ app.post('/submit', (req, res) => {
   gameState.roundParticipants[gameState.round].push(name.trim());
 
   gameState.participants.push({ name: name.trim(), answer });
+  
+  // ✅ 실시간 투표 추적 업데이트 (이름 제외)
+  gameState.submittedUsers.add(name.trim());
+  const answerKey = answer.trim().toUpperCase();
+  if (answerKey === 'O' || answerKey === 'X') {
+    gameState.currentVotes[answerKey].count++;
+    // 이름은 저장하지 않음 (개인정보 보호)
+  }
 
   const survivors = (gameState.lastSurvivors || []).map(n => n.trim().toLowerCase());
   const participantsWithStatus = gameState.participants.map(p => ({
     ...p,
     survived: survivors.includes(p.name.trim().toLowerCase())
   }));
+  
   io.emit('newParticipant', participantsWithStatus);
   io.emit('participantCount', gameState.participants.length);
+  updateVoteStatus(); // ✅ 실시간 투표 현황 업데이트
+  
   res.sendStatus(200);
 });
 
@@ -183,7 +237,6 @@ app.post('/admin/end', (req, res) => {
   gameState.lastSurvivors = names;
   gameState.status = 'ended';
 
-  // ✅ 생존자 누적 저장
   names.forEach(name => gameState.allSurvivors.add(name.trim().toLowerCase()));
   
   addLogEntry(`🔴 라운드 종료됨 - 생존자 ${names.join(', ')}`);
@@ -194,6 +247,70 @@ app.post('/admin/end', (req, res) => {
   });
 
   res.json({ message: '라운드 종료', survivors: gameState.lastSurvivors });
+});
+
+// ✅ **NEW: 생존자 추첨 API**
+app.post('/admin/draw-winners', (req, res) => {
+  const { count = 1 } = req.body;
+  
+  if (!gameState.lastSurvivors || gameState.lastSurvivors.length === 0) {
+    return res.status(400).json({ message: '추첨할 생존자가 없습니다.' });
+  }
+  
+  if (count > gameState.lastSurvivors.length) {
+    return res.status(400).json({ message: '생존자 수보다 많은 당첨자를 뽑을 수 없습니다.' });
+  }
+  
+  // 추첨 진행 상태로 변경
+  gameState.isDrawing = true;
+  io.emit('drawingStarted', { 
+    totalSurvivors: gameState.lastSurvivors.length,
+    drawCount: count 
+  });
+  
+  // 1초 후 추첨 결과 발표 (긴장감 조성)
+  setTimeout(() => {
+    const shuffled = [...gameState.lastSurvivors].sort(() => Math.random() - 0.5);
+    const winners = shuffled.slice(0, count);
+    
+    gameState.drawWinners = winners;
+    gameState.isDrawing = false;
+    
+    addLogEntry(`🎁 추첨 완료 - 당첨자: ${winners.join(', ')}`);
+    
+    // 모든 클라이언트에게 당첨자 발표
+    io.emit('drawingResult', {
+      winners: winners,
+      totalSurvivors: gameState.lastSurvivors.length,
+      drawCount: count
+    });
+    
+    res.json({ 
+      message: '추첨 완료', 
+      winners: winners,
+      totalSurvivors: gameState.lastSurvivors.length 
+    });
+  }, 1000);
+});
+
+// ✅ **NEW: 실시간 투표 현황 조회 API** (어드민용)
+app.get('/admin/vote-status', (req, res) => {
+  const voteData = {
+    votes: gameState.currentVotes,
+    totalSubmitted: gameState.submittedUsers.size,
+    totalParticipants: gameState.participants.length,
+    oPercentage: gameState.participants.length > 0 
+      ? Math.round((gameState.currentVotes.O.count / gameState.participants.length) * 100) 
+      : 0,
+    xPercentage: gameState.participants.length > 0 
+      ? Math.round((gameState.currentVotes.X.count / gameState.participants.length) * 100) 
+      : 0,
+    currentQuestion: gameState.currentQuestion,
+    currentAnswer: gameState.currentAnswer,
+    round: gameState.round,
+    status: gameState.status
+  };
+  res.json(voteData);
 });
 
 app.get('/admin/participants', (req, res) => {
@@ -209,20 +326,24 @@ app.get('/admin/logs', (req, res) => {
   res.json(gameState.logs);
 });
 
-// ✅ 새로고침 시 문제 유지 보완 + 현재 라운드 정보 추가
 app.get('/question', (req, res) => {
   res.json({
     question: gameState.currentQuestion || '문제 없음',
     status: gameState.status,
-    participantCount: gameState.participants.length, // ✅ 참여자 수 추가
-    currentRound: gameState.round, // ✅ 현재 라운드 추가
+    participantCount: gameState.participants.length,
+    currentRound: gameState.round,
     survivors: Array.isArray(gameState.lastSurvivors)
       ? gameState.lastSurvivors.join(', ')
-      : ''
+      : '',
+    // ✅ 클라이언트에서도 투표 현황 확인 가능
+    voteStatus: {
+      oCount: gameState.currentVotes.O.count,
+      xCount: gameState.currentVotes.X.count,
+      totalSubmitted: gameState.submittedUsers.size
+    }
   });
 });
 
-// ✅ GPT 채팅 엔드포인트 추가
 app.post('/ask-gpt', async (req, res) => {
   try {
     const { message } = req.body;
@@ -239,18 +360,25 @@ app.post('/ask-gpt', async (req, res) => {
 });
 
 app.post('/admin/reset', (req, res) => {
- gameState = {
-  quizType: 'general',
-  round: 0,
-  currentQuestion: '',
-  currentAnswer: '',
-  participants: [],
-  status: 'waiting',
-  lastSurvivors: [],
-  roundParticipants: {},
-  logs: [],
-  allSurvivors: new Set() // ✅ 초기화 시 함께 리셋
-};
+  gameState = {
+    quizType: 'general',
+    round: 0,
+    currentQuestion: '',
+    currentAnswer: '',
+    participants: [],
+    status: 'waiting',
+    lastSurvivors: [],
+    roundParticipants: {},
+    logs: [],
+    allSurvivors: new Set(),
+    currentVotes: { 
+      O: { count: 0 }, 
+      X: { count: 0 } 
+    },
+    submittedUsers: new Set(),
+    isDrawing: false,
+    drawWinners: []
+  };
   addLogEntry('🔄 전체 게임 초기화됨 (1라운드부터)');
   io.emit('reset');
   res.json({ message: '게임이 초기화되었습니다.' });
