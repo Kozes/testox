@@ -38,7 +38,10 @@ let gameState = {
   submittedUsers: new Set(),
   // ✅ 추첨 기능을 위한 상태
   isDrawing: false,
-  drawWinners: []
+  drawWinners: [],
+  // ✅ NEW: 라운드별 생존/탈락 추적
+  roundHistory: {}, // { participantName: { rounds: [1,2,3], eliminatedAt: 4 } }
+  participantDetails: {} // { participantName: { totalRounds: 3, status: 'survived/eliminated', lastRound: 3 } }
 };
 
 function addLogEntry(message) {
@@ -309,6 +312,42 @@ app.get('/admin/vote-status', (req, res) => {
   res.json(voteData);
 });
 
+// ✅ NEW: 라운드별 참가자 상세 정보 API
+app.get('/admin/participants-detailed', (req, res) => {
+  const { filter } = req.query; // 'all', 'survived', 'eliminated', 'round-X'
+  
+  let participants = Object.values(gameState.participantDetails);
+  
+  // 필터 적용
+  if (filter === 'survived') {
+    participants = participants.filter(p => p.status === 'survived');
+  } else if (filter === 'eliminated') {
+    participants = participants.filter(p => p.status === 'eliminated');
+  } else if (filter?.startsWith('round-')) {
+    const targetRound = parseInt(filter.split('-')[1]);
+    participants = participants.filter(p => 
+      p.survivedRounds.includes(targetRound) || 
+      (p.eliminatedAt === targetRound)
+    );
+  }
+  
+  // 최신 라운드 순으로 정렬
+  participants.sort((a, b) => {
+    if (a.status !== b.status) {
+      return a.status === 'survived' ? -1 : 1; // 생존자 먼저
+    }
+    return b.lastRound - a.lastRound;
+  });
+  
+  res.json({
+    participants,
+    totalParticipants: Object.keys(gameState.participantDetails).length,
+    currentSurvivors: participants.filter(p => p.status === 'survived').length,
+    currentRound: gameState.round,
+    availableRounds: Array.from(new Set(Object.values(gameState.participantDetails).flatMap(p => p.survivedRounds))).sort((a,b) => a-b)
+  });
+});
+
 app.get('/admin/participants', (req, res) => {
   const survivors = gameState.allSurvivors || new Set();
   const data = gameState.participants.map(p => ({
@@ -373,7 +412,9 @@ app.post('/admin/reset', (req, res) => {
     },
     submittedUsers: new Set(),
     isDrawing: false,
-    drawWinners: []
+    drawWinners: [],
+    roundHistory: {},
+    participantDetails: {}
   };
   addLogEntry('🔄 전체 게임 초기화됨 (1라운드부터)');
   io.emit('reset');
