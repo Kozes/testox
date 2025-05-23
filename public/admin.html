@@ -2,15 +2,230 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>운영자 페이지</title>
+  <title>SK AX 운영자 페이지</title>
   <script src="/socket.io/socket.io.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: #f5f7fa;
-      text-align: center;
-      padding: 30px;
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 25%, #2c2c54 50%, #40407a 75%, #706fd3 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 20s ease infinite;
+      min-height: 100vh;
+      color: white;
+      padding: 20px;
+      margin: 0;
     }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .admin-container {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(15px);
+      max-width: 1000px;
+      margin: auto;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .admin-header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .admin-title {
+      font-size: 2rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+      background: linear-gradient(45deg, #706fd3, #40407a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .admin-subtitle {
+      opacity: 0.8;
+      font-size: 1.1rem;
+    }
+
+    .control-section {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 15px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 12px 20px;
+      font-size: 1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: linear-gradient(135deg, #706fd3, #40407a);
+      color: white;
+      box-shadow: 0 4px 15px rgba(112, 111, 211, 0.3);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(112, 111, 211, 0.4);
+    }
+
+    .btn-primary { background: linear-gradient(135deg, #00d2ff, #3a7bd5); }
+    .btn-success { background: linear-gradient(135deg, #4ecdc4, #44a08d); }
+    .btn-warning { background: linear-gradient(135deg, #ffd700, #ffb347); color: #333; }
+    .btn-danger { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
+    .btn-special { background: linear-gradient(135deg, #ffd700, #ffb347); color: #333; }
+
+    .data-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .data-card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 15px;
+      padding: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .data-card h3 {
+      margin-bottom: 15px;
+      color: #00d2ff;
+    }
+
+    #participant-list {
+      list-style: none;
+      padding: 0;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    #participant-list li {
+      background: rgba(255,255,255,0.1);
+      margin-bottom: 5px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+
+    #log-box {
+      max-height: 300px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.2);
+      border-radius: 10px;
+      padding: 15px;
+    }
+
+    .log-entry {
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding: 8px 0;
+      font-size: 0.9rem;
+      font-family: 'Courier New', monospace;
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    #quiz-type-label {
+      background: rgba(255,255,255,0.1);
+      padding: 10px 15px;
+      border-radius: 20px;
+      margin: 15px 0;
+      font-weight: bold;
+      display: inline-block;
+    }
+
+    /* 패스워드 모달 */
+    .password-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .password-content {
+      background: linear-gradient(135deg, #706fd3, #40407a);
+      padding: 40px;
+      border-radius: 20px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    .password-content h2 {
+      margin-bottom: 20px;
+      color: white;
+    }
+
+    .password-input {
+      width: 100%;
+      padding: 12px 15px;
+      border: none;
+      border-radius: 25px;
+      font-size: 1rem;
+      margin-bottom: 20px;
+      text-align: center;
+      outline: none;
+    }
+
+    .password-btn {
+      background: linear-gradient(135deg, #ffd700, #ffb347);
+      color: #333;
+      padding: 10px 30px;
+      border: none;
+      border-radius: 25px;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 0 10px;
+    }
+
+    @media (max-width: 768px) {
+      .data-section {
+        grid-template-columns: 1fr;
+      }
+      .button-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
     .admin-container {
       background: white;
       max-width: 600px;
@@ -36,47 +251,196 @@
   </style>
 </head>
 <body>
-  <div class="admin-container">
-    <h2>운영자 페이지</h2>
-    <div>
-      <button onclick="startGame()">🎮 게임 시작</button>
-      <button onclick="nextQuestion()">⏭ 다음 문제 출제</button>
-      <button onclick="endRound()">🛑 라운드 종료</button>
-      <button onclick="setQuizType('team')">👥 팀 기반 퀴즈</button>
-      <button onclick="setQuizType('general')">🧠 상식 퀴즈</button>
-      <button onclick="resetGame()">🔄 초기화 (1라운드부터)</button>
-      <!-- ✅ 핵심퀴즈 버튼 추가 -->
-      <button onclick="sendCoreQuestion(1)">💡 핵심퀴즈 1</button>
-      <button onclick="sendCoreQuestion(2)">💡 핵심퀴즈 2</button>
+  <!-- 패스워드 모달 -->
+  <div id="password-modal" class="password-modal">
+    <div class="password-content">
+      <h2>🔒 관리자 인증</h2>
+      <p>SK AX OX 퀴즈 관리자 페이지입니다</p>
+      <input type="password" id="password-input" class="password-input" placeholder="패스워드를 입력하세요" />
+      <div>
+        <button onclick="checkPassword()" class="password-btn">
+          <i class="fas fa-key"></i> 인증
+        </button>
+        <button onclick="goToMain()" class="password-btn" style="background: linear-gradient(135deg, #ff416c, #ff4b2b); color: white;">
+          <i class="fas fa-home"></i> 메인으로
+        </button>
+      </div>
     </div>
-    <div id="quiz-type-label">선택된 퀴즈 타입: 없음</div>
-
-    <h3>📋 참가자 리스트</h3>
-    <ul id="participant-list"></ul>
-
-    <h3>📜 로그</h3>
-    <div id="log-box"></div>
   </div>
 
-  <script>
+  <div class="admin-container" id="admin-content" style="display: none;">
+    <!-- 헤더 -->
+    <div class="admin-header">
+      <h1 class="admin-title">
+        <i class="fas fa-cog"></i> SK AX OX 퀴즈 관리자
+      </h1>
+      <p class="admin-subtitle">HC2 Group TownHall Meeting - 관리 콘솔</p>
+    </div>
+
+    <!-- 게임 제어 섹션 -->
+    <div class="control-section">
+      <h3 class="section-title">
+        <i class="fas fa-gamepad"></i> 게임 제어
+      </h3>
+      <div class="button-grid">
+        <button onclick="startGame()" class="btn-primary">
+          <i class="fas fa-play"></i> 게임 시작
+        </button>
+        <button onclick="nextQuestion()" class="btn-primary">
+          <i class="fas fa-forward"></i> 다음 문제
+        </button>
+        <button onclick="endRound()" class="btn-danger">
+          <i class="fas fa-stop"></i> 라운드 종료
+        </button>
+        <button onclick="resetGame()" class="btn-warning">
+          <i class="fas fa-redo"></i> 게임 초기화
+        </button>
+      </div>
+    </div>
+
+    <!-- 퀴즈 타입 설정 -->
+    <div class="control-section">
+      <h3 class="section-title">
+        <i class="fas fa-list"></i> 퀴즈 설정
+      </h3>
+      <div class="button-grid">
+        <button onclick="setQuizType('general')" class="btn-success">
+          <i class="fas fa-brain"></i> 상식 퀴즈
+        </button>
+        <button onclick="setQuizType('team')" class="btn-success">
+          <i class="fas fa-users"></i> 팀 기반 퀴즈
+        </button>
+        <button onclick="sendCoreQuestion(1)" class="btn-special">
+          <i class="fas fa-star"></i> 핵심퀴즈 1
+        </button>
+        <button onclick="sendCoreQuestion(2)" class="btn-special">
+          <i class="fas fa-star"></i> 핵심퀴즈 2
+        </button>
+      </div>
+      <div id="quiz-type-label">선택된 퀴즈 타입: 없음</div>
+    </div>
+
+    <!-- 생존자 관리 -->
+    <div class="control-section">
+      <h3 class="section-title">
+        <i class="fas fa-trophy"></i> 생존자 관리
+      </h3>
+      <div class="button-grid">
+        <button onclick="drawWinner()" class="btn-special">
+          <i class="fas fa-dice"></i> 생존자 추첨
+        </button>
+      </div>
+    </div>
+
+    <!-- 데이터 섹션 -->
+    <div class="data-section">
+      <div class="data-card">
+        <h3><i class="fas fa-users"></i> 참가자 리스트</h3>
+        <ul id="participant-list"></ul>
+      </div>
+      <div class="data-card">
+        <h3><i class="fas fa-clipboard-list"></i> 시스템 로그</h3>
+        <div id="log-box"></div>
+      </div>
+    </div>
+  </div>
+
+   <script>
     const socket = io();
+    const ADMIN_PASSWORD = "skax2024"; // 원하는 패스워드로 변경 가능
+
+    // 패스워드 확인
+    function checkPassword() {
+      const input = document.getElementById('password-input');
+      const password = input.value.trim();
+      
+      if (password === ADMIN_PASSWORD) {
+        document.getElementById('password-modal').style.display = 'none';
+        document.getElementById('admin-content').style.display = 'block';
+        showSuccessToast('인증 성공! 관리자 페이지에 오신 것을 환영합니다.');
+        loadParticipants();
+        loadLogs();
+      } else {
+        input.style.animation = 'shake 0.5s ease-in-out';
+        showErrorToast('잘못된 패스워드입니다.');
+        input.value = '';
+        setTimeout(() => {
+          input.style.animation = '';
+        }, 500);
+      }
+    }
+
+    function goToMain() {
+      window.location.href = '/';
+    }
+
+    // 엔터키로 패스워드 입력
+    document.addEventListener('DOMContentLoaded', () => {
+      const passwordInput = document.getElementById('password-input');
+      passwordInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          checkPassword();
+        }
+      });
+      passwordInput.focus();
+    });
+
+    // 토스트 알림 시스템
+    function showSuccessToast(message) {
+      showToast(message, 'success');
+    }
+
+    function showErrorToast(message) {
+      showToast(message, 'error');
+    }
+
+    function showToast(message, type) {
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 10px;
+        color: white;
+        font-weight: bold;
+        z-index: 10000;
+        transform: translateX(400px);
+        transition: transform 0.3s ease;
+        ${type === 'success' ? 'background: linear-gradient(135deg, #4ecdc4, #44a08d);' : 'background: linear-gradient(135deg, #ff416c, #ff4b2b);'}
+      `;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.transform = 'translateX(0)';
+      }, 100);
+      
+      setTimeout(() => {
+        toast.style.transform = 'translateX(400px)';
+        setTimeout(() => {
+          document.body.removeChild(toast);
+        }, 300);
+      }, 3000);
+    }
 
     async function startGame() {
       const res = await fetch('/admin/start', { method: 'POST' });
       const data = await res.json();
-      log(`게임 시작됨 - ${data.question}`);
+      log(`🎮 ${data.message}`);
+      updateQuizTypeLabel();
     }
 
     async function nextQuestion() {
       const res = await fetch('/admin/next', { method: 'POST' });
       const data = await res.json();
-      log(`다음 문제 출제됨 - ${data.question}`);
+      log(`⏭ ${data.message}`);
     }
 
     async function endRound() {
       const res = await fetch('/admin/end', { method: 'POST' });
       const data = await res.json();
-      log(`🔴 라운드 종료됨 - 생존자 ${data.survivors.join(', ')}`);
+      log(`🛑 ${data.message} - 생존자: ${data.survivors.join(', ')}`);
       loadParticipants();
     }
 
@@ -86,37 +450,71 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type })
       });
-      document.getElementById('quiz-type-label').innerText = '선택된 퀴즈 타입: ' + type;
-      log(`퀴즈 타입 설정됨 → ${type}`);
+      updateQuizTypeLabel(type);
+      log(`🎯 퀴즈 타입 설정: ${type === 'team' ? '팀 기반' : '상식'} 퀴즈`);
     }
 
     async function resetGame() {
-      if (!confirm('정말 초기화하시겠습니까? 모든 데이터가 삭제됩니다.')) return;
+      if (!confirm('⚠️ 정말 게임을 초기화하시겠습니까?\n모든 데이터가 삭제됩니다.')) return;
+      
       const res = await fetch('/admin/reset', { method: 'POST' });
       const data = await res.json();
-      log(data.message);
-      document.getElementById('quiz-type-label').innerText = '선택된 퀴즈 타입: 없음';
+      log(`🔄 ${data.message}`);
+      updateQuizTypeLabel();
       document.getElementById('participant-list').innerHTML = '';
-      document.getElementById('log-box').innerHTML = '';
+    }
+
+    async function sendCoreQuestion(version) {
+      const res = await fetch('/admin/core-question', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ version })
+      });
+      const data = await res.json();
+      log(`💡 ${data.message}`);
+    }
+
+    // ✅ 생존자 추첨 기능
+    async function drawWinner() {
+      const res = await fetch('/admin/draw', { method: 'POST' });
+      const data = await res.json();
+      
+      if (res.ok) {
+        log(`🎉 추첨 당첨자: ${data.winner} (총 ${data.totalSurvivors}명 중)`);
+        showSuccessToast(`🎉 당첨자: ${data.winner}`);
+      } else {
+        log(`⚠️ 추첨 실패: ${data.message}`);
+        showErrorToast(data.message);
+      }
     }
 
     async function loadParticipants() {
-      const res = await fetch('/admin/participants');
-      const data = await res.json();
-      renderParticipants(data);
+      try {
+        const res = await fetch('/admin/participants');
+        const data = await res.json();
+        renderParticipants(data);
+      } catch (error) {
+        log('❌ 참가자 로드 실패');
+      }
     }
 
     async function loadLogs() {
-      const res = await fetch('/admin/logs');
-      const data = await res.json();
-      const box = document.getElementById('log-box');
-      box.innerHTML = '';
-      data.forEach(msg => {
-        const div = document.createElement('div');
-        div.className = 'log-entry';
-        div.innerText = msg;
-        box.appendChild(div);
-      });
+      try {
+        const res = await fetch('/admin/logs');
+        const data = await res.json();
+        const box = document.getElementById('log-box');
+        box.innerHTML = '';
+        data.forEach(msg => {
+          const div = document.createElement('div');
+          div.className = 'log-entry';
+          div.innerText = msg;
+          box.appendChild(div);
+        });
+        // 스크롤을 맨 아래로
+        box.scrollTop = box.scrollHeight;
+      } catch (error) {
+        log('❌ 로그 로드 실패');
+      }
     }
 
     function renderParticipants(data) {
@@ -124,37 +522,53 @@
       ul.innerHTML = '';
       data.forEach(p => {
         const li = document.createElement('li');
-        li.innerText = `${p.name} (${p.answer}) ${p.survived ? '✅' : '❌'}`;
+        li.innerHTML = `
+          <i class="fas fa-user"></i> ${p.name} 
+          <span style="color: ${p.answer === 'O' ? '#4ecdc4' : '#ff416c'};">(${p.answer})</span> 
+          ${p.survived ? '<span style="color: #ffd700;"><i class="fas fa-crown"></i> 생존</span>' : '<span style="color: #999;"><i class="fas fa-skull"></i> 탈락</span>'}
+        `;
         ul.appendChild(li);
       });
+    }
+
+    function updateQuizTypeLabel(type = null) {
+      const label = document.getElementById('quiz-type-label');
+      if (type) {
+        label.innerHTML = `<i class="fas fa-check-circle"></i> 선택된 퀴즈 타입: ${type === 'team' ? '👥 팀 기반' : '🧠 상식'} 퀴즈`;
+        label.style.background = 'linear-gradient(135deg, #4ecdc4, #44a08d)';
+        label.style.color = 'white';
+      } else {
+        label.innerHTML = '<i class="fas fa-question-circle"></i> 선택된 퀴즈 타입: 없음';
+        label.style.background = 'rgba(255,255,255,0.1)';
+        label.style.color = 'white';
+      }
     }
 
     function log(msg) {
       const box = document.getElementById('log-box');
       const div = document.createElement('div');
       div.className = 'log-entry';
-      div.innerText = `🕓 ${new Date().toLocaleTimeString()} - ${msg}`;
+      div.innerHTML = `<i class="fas fa-clock"></i> ${new Date().toLocaleTimeString()} - ${msg}`;
       box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
     }
 
+    // 소켓 이벤트
     socket.on('newParticipant', (data) => {
       renderParticipants(data);
+      log(`👤 새 참가자 등록됨 (총 ${data.length}명)`);
     });
-    // ✅ 핵심퀴즈 전송 함수
-async function sendCoreQuestion(version) {
-  const res = await fetch('/admin/core-question', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ version })
-  });
-  const data = await res.json();
-  log(data.message);
-}
 
-    window.onload = () => {
-      loadParticipants();
-      loadLogs();
-    };
+    // CSS 애니메이션 추가
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-10px); }
+        75% { transform: translateX(10px); }
+      }
+    `;
+    document.head.appendChild(style);
   </script>
 </body>
 </html>
