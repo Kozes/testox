@@ -13,7 +13,7 @@
     <!-- 헤더 -->
     <div class="header">
       <img src="skax-logo.png" alt="SK AX 로고" class="logo" />
-      <h1 class="tagline">Future with AI, Powered by SK AX</h1>
+      <h1 class="tagline">Imagine, AX</h1>
       <p class="subtagline">HC2 Group TownHall Meeting</p>
     </div>
 
@@ -37,6 +37,8 @@
           </div>
           <p id="participant-count" class="participant-display">현재 참여자 수: 0명</p>
         </div>
+
+        <!-- ✅ NEW: 실시간 투표 현황 - 제거됨 -->
 
         <!-- 사용자 입력 -->
         <div class="user-input">
@@ -100,12 +102,39 @@
     </div>
   </div>
 
+  <!-- ✅ NEW: 추첨 결과 모달 -->
+  <div id="draw-modal" class="draw-modal" style="display: none;">
+    <div class="draw-content">
+      <div class="draw-animation">
+        <i class="fas fa-gift"></i>
+      </div>
+      <h2>🎉 추첨 결과 발표!</h2>
+      <div id="draw-winners" class="draw-winners"></div>
+      <button onclick="closeDraw()" class="draw-close-btn">
+        <i class="fas fa-check"></i> 확인
+      </button>
+    </div>
+  </div>
+
   <!-- 토스트 알림 -->
   <div id="toast" class="toast"></div>
+
+  <!-- ✅ NEW: 파티클 효과 컨테이너 -->
+  <div id="particles-container"></div>
 
   <script>
     const socket = io();
     let alreadyShownSurvivorMessage = false;
+
+    // ✅ NEW: 추첨 시작 알림
+    socket.on('drawingStarted', (data) => {
+      showToast('🎲 추첨이 시작되었습니다!', 'info');
+    });
+
+    // ✅ NEW: 추첨 결과 표시
+    socket.on('drawingResult', (data) => {
+      showDrawResult(data.winners);
+    });
 
     // 소켓 이벤트 리스너
     socket.on('newQuestion', (data) => {
@@ -160,7 +189,6 @@
       renderSurvivors(data.survivors);
     });
 
-    // 소켓 연결 시 즉시 참여자 수 요청
     socket.on('connect', () => {
       console.log('서버에 연결됨');
       setTimeout(() => {
@@ -169,21 +197,64 @@
       }, 100);
     });
 
+    // ✅ NEW: 추첨 결과 표시
+    function showDrawResult(winners) {
+      const modal = document.getElementById('draw-modal');
+      const winnersDiv = document.getElementById('draw-winners');
+      
+      winnersDiv.innerHTML = '';
+      winners.forEach((winner, index) => {
+        const winnerElement = document.createElement('div');
+        winnerElement.className = 'winner-item';
+        winnerElement.innerHTML = `<i class="fas fa-crown"></i> ${winner}`;
+        winnerElement.style.animationDelay = `${index * 0.2}s`;
+        winnersDiv.appendChild(winnerElement);
+      });
+      
+      modal.style.display = 'flex';
+      triggerParticles();
+    }
+
+    function closeDraw() {
+      document.getElementById('draw-modal').style.display = 'none';
+    }
+
+    // ✅ NEW: 파티클 효과
+    function triggerParticles() {
+      const container = document.getElementById('particles-container');
+      
+      for (let i = 0; i < 30; i++) {
+        setTimeout(() => {
+          createParticle(container);
+        }, i * 100);
+      }
+    }
+
+    function createParticle(container) {
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.innerHTML = ['🎉', '🎊', '⭐', '💫', '✨'][Math.floor(Math.random() * 5)];
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.animationDuration = (Math.random() * 3 + 2) + 's';
+      container.appendChild(particle);
+      
+      setTimeout(() => {
+        container.removeChild(particle);
+      }, 5000);
+    }
+
     // 초기 데이터 로드
     async function loadQuestion() {
       try {
         const res = await fetch('/question');
         const data = await res.json();
         
-        // 문제 표시
         document.getElementById('question-box').innerText = data.question || '문제 없음';
         
-        // 참여자 수 표시
         const participantCount = data.participantCount || 0;
         document.getElementById('participant-count').innerText = `현재 참여자 수: ${participantCount}명`;
         document.getElementById('total-participants').innerText = `${participantCount}명`;
         
-        // 현재 라운드 표시
         const currentRoundElement = document.getElementById('current-round');
         if (currentRoundElement) {
           if (data.currentRound && data.currentRound > 0) {
@@ -217,7 +288,6 @@
       }
     }
 
-    // 생존자 렌더링
     function renderSurvivors(survivors) {
       const box = document.getElementById('survivor-box');
       const list = document.getElementById('survivor-list');
@@ -251,7 +321,7 @@
       }
     }
 
-    // 답안 제출
+    // 답안 제출 (향상된 피드백)
     async function submitAnswer(answer) {
       const name = document.getElementById('username').value.trim();
       if (!name) {
@@ -264,6 +334,11 @@
       button.style.pointerEvents = 'none';
       const originalContent = button.innerHTML;
       button.innerHTML = '<div class="loading"></div>';
+
+      // ✅ 모바일 진동 피드백
+      if (navigator.vibrate) {
+        navigator.vibrate(200);
+      }
 
       try {
         const res = await fetch('/submit', {
@@ -278,6 +353,8 @@
           showToast('생존자만 제출할 수 있습니다.', 'error');
         } else {
           showToast(`${answer} 답안이 제출되었습니다!`, 'success');
+          // ✅ 성공 시 파티클 효과
+          createSubmitParticles(button);
         }
       } catch (err) {
         showToast('서버 오류: 제출 실패', 'error');
@@ -286,6 +363,28 @@
         setTimeout(() => {
           button.innerHTML = originalContent;
           button.style.pointerEvents = 'auto';
+        }, 1000);
+      }
+    }
+
+    // ✅ NEW: 제출 성공 시 파티클 효과
+    function createSubmitParticles(button) {
+      const rect = button.getBoundingClientRect();
+      const container = document.getElementById('particles-container');
+      
+      for (let i = 0; i < 8; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'submit-particle';
+        particle.style.left = rect.left + rect.width/2 + 'px';
+        particle.style.top = rect.top + rect.height/2 + 'px';
+        particle.style.setProperty('--dx', (Math.random() - 0.5) * 200 + 'px');
+        particle.style.setProperty('--dy', (Math.random() - 0.5) * 200 + 'px');
+        container.appendChild(particle);
+        
+        setTimeout(() => {
+          if (container.contains(particle)) {
+            container.removeChild(particle);
+          }
         }, 1000);
       }
     }
@@ -299,14 +398,12 @@
       input.value = '';
       const chat = document.getElementById('chat-box');
       
-      // 사용자 메시지 표시
       const userMessage = document.createElement('div');
       userMessage.className = 'chat-message user';
       userMessage.innerHTML = `<i class="fas fa-user"></i> ${message}`;
       chat.appendChild(userMessage);
       chat.scrollTop = chat.scrollHeight;
 
-      // 로딩 메시지 표시
       const loadingMessage = document.createElement('div');
       loadingMessage.className = 'chat-message bot';
       loadingMessage.innerHTML = `<i class="fas fa-robot"></i> <div class="loading"></div> 답변을 생각하고 있습니다...`;
@@ -322,10 +419,8 @@
 
         const data = await res.json();
         
-        // 로딩 메시지 제거
         chat.removeChild(loadingMessage);
         
-        // GPT 응답 표시
         const botMessage = document.createElement('div');
         botMessage.className = 'chat-message bot';
         botMessage.innerHTML = `<i class="fas fa-robot"></i> ${data.reply}`;
@@ -342,7 +437,6 @@
       }
     }
 
-    // 토스트 알림 표시
     function showToast(message, type = 'info') {
       const toast = document.getElementById('toast');
       toast.textContent = message;
@@ -372,7 +466,6 @@
       loadSurvivors();
       showToast('SK AX OX 퀴즈에 오신 것을 환영합니다! 🎉', 'success');
       
-      // 1초 후 다시 한번 참여자 수 확인
       setTimeout(() => {
         loadQuestion();
       }, 1000);
