@@ -85,10 +85,6 @@ io.on('connection', (socket) => {
   
   socket.emit('participantCount', gameState.participants.length);
   
-  if (gameState.status === 'active') {
-    updateVoteStatus();
-  }
-  
   if (gameState.lastSurvivors && gameState.lastSurvivors.length > 0) {
     socket.emit('survivors', { survivors: gameState.lastSurvivors });
   }
