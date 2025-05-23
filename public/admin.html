@@ -758,10 +758,17 @@
     }
 
     async function endRound() {
+      console.log('🛑 라운드 종료 요청 시작...');
       const res = await fetch('/admin/end', { method: 'POST' });
       const data = await res.json();
+      console.log('📡 라운드 종료 응답:', data);
+      
       log(`🛑 ${data.message} - 생존자: ${data.survivors.join(', ')}`);
-      loadDetailedParticipants('all'); // ✅ 상세 참가자 로드로 변경
+      
+      // ✅ 즉시 참가자 리스트 새로고침
+      setTimeout(() => {
+        loadDetailedParticipants('all');
+      }, 500); // 서버 처리 시간 고려해서 0.5초 후
     }
 
     async function setQuizType(type) {
@@ -1007,6 +1014,8 @@
 
     // 소켓 이벤트
     socket.on('newParticipant', (data) => {
+      console.log('👤 새 참가자 이벤트 수신:', data);
+      
       // ✅ 기존 필터 유지하면서 새로고침
       const activeFilter = document.querySelector('.filter-btn.active')?.id?.replace('filter-', '') || 'all';
       const roundFilter = document.getElementById('round-filter').value;
@@ -1018,6 +1027,25 @@
       }
       
       log(`👤 새 참가자 등록됨 (총 ${data.length}명)`);
+    });
+
+    // ✅ 라운드 종료 이벤트 수신 시 참가자 리스트 자동 새로고침
+    socket.on('roundEnded', (data) => {
+      console.log('🎯 어드민에서 라운드 종료 이벤트 수신:', data);
+      
+      // 현재 필터 유지하면서 참가자 리스트 새로고침
+      setTimeout(() => {
+        const activeFilter = document.querySelector('.filter-btn.active')?.id?.replace('filter-', '') || 'all';
+        const roundFilter = document.getElementById('round-filter').value;
+        
+        if (roundFilter) {
+          loadDetailedParticipants(roundFilter);
+        } else {
+          loadDetailedParticipants(activeFilter);
+        }
+        
+        log(`🏆 라운드 종료 반영 완료 - 생존자 ${data.survivors?.length || 0}명`);
+      }, 300);
     });
 
     // ✅ 새 문제 시 투표 현황 숨기기
