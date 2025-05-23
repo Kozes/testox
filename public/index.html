@@ -62,10 +62,13 @@
         <div class="chat-section">
           <div class="card-title">
             <i class="fas fa-robot"></i> AI 어시스턴트
+            <div class="chat-warning">
+              <i class="fas fa-exclamation-triangle"></i> 퀴즈 문제 관련 질문은 답변되지 않습니다
+            </div>
           </div>
           <div id="chat-box" class="chat-box"></div>
           <div class="chat-input-area">
-            <input type="text" id="chat-input" class="chat-input" placeholder="GPT에게 질문하세요..." />
+            <input type="text" id="chat-input" class="chat-input" placeholder="퀴즈와 관련 없는 질문만 가능합니다..." />
             <button onclick="sendMessage()" class="send-btn">
               <i class="fas fa-paper-plane"></i>
             </button>
@@ -136,6 +139,33 @@
       showDrawResult(data.winners);
     });
 
+    // ✅ NEW: 게임 초기화 이벤트 처리
+    socket.on('reset', () => {
+      // 페이지 상태 초기화
+      document.getElementById('question-box').innerText = '게임이 초기화되었습니다. 새로운 게임을 기다려주세요.';
+      document.getElementById('answer-display').innerText = '';
+      document.getElementById('answer-display').classList.remove('show');
+      document.getElementById('participant-count').innerText = '현재 참여자 수: 0명';
+      document.getElementById('current-round').innerText = '준비 중';
+      document.getElementById('total-participants').innerText = '0명';
+      
+      // 생존자 박스 숨기기
+      document.getElementById('survivor-box').style.display = 'none';
+      
+      // 사용자 입력 초기화
+      document.getElementById('username').value = '';
+      
+      // 채팅창 초기화
+      const chatBox = document.getElementById('chat-box');
+      chatBox.innerHTML = '<div class="chat-message bot"><i class="fas fa-robot"></i> 게임이 초기화되었습니다. 새로운 게임을 준비해주세요! 🎮</div>';
+      
+      // 알림 표시
+      showToast('🔄 게임이 초기화되었습니다!', 'info');
+      
+      // 전역 변수 초기화
+      alreadyShownSurvivorMessage = false;
+    });
+
     // 소켓 이벤트 리스너
     socket.on('newQuestion', (data) => {
       document.getElementById('question-box').innerText = data.question;
@@ -195,6 +225,20 @@
         loadQuestion();
         loadSurvivors();
       }, 100);
+    });
+
+    // ✅ NEW: 연결 끊김 처리
+    socket.on('disconnect', () => {
+      showToast('⚠️ 서버와의 연결이 끊어졌습니다. 재연결 중...', 'warning');
+    });
+
+    // ✅ NEW: 재연결 처리
+    socket.on('reconnect', () => {
+      showToast('✅ 서버에 다시 연결되었습니다!', 'success');
+      setTimeout(() => {
+        loadQuestion();
+        loadSurvivors();
+      }, 500);
     });
 
     // ✅ NEW: 추첨 결과 표시
@@ -334,11 +378,6 @@
       button.style.pointerEvents = 'none';
       const originalContent = button.innerHTML;
       button.innerHTML = '<div class="loading"></div>';
-
-      // ✅ 모바일 진동 피드백
-      if (navigator.vibrate) {
-        navigator.vibrate(200);
-      }
 
       try {
         const res = await fetch('/submit', {
