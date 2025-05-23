@@ -38,8 +38,6 @@
           <p id="participant-count" class="participant-display">현재 참여자 수: 0명</p>
         </div>
 
-        <!-- ✅ NEW: 실시간 투표 현황 - 제거됨 -->
-
         <!-- 사용자 입력 -->
         <div class="user-input">
           <input type="text" id="username" class="username-input" placeholder="이름을 입력하세요" />
@@ -105,7 +103,7 @@
     </div>
   </div>
 
-  <!-- ✅ NEW: 라운드 결과 통합 모달 -->
+  <!-- 라운드 결과 통합 모달 -->
   <div id="result-modal" class="result-modal" style="display: none;">
     <div class="result-content">
       <div class="result-header">
@@ -164,6 +162,8 @@
       </div>
     </div>
   </div>
+
+  <!-- 추첨 모달 -->
   <div id="draw-modal" class="draw-modal" style="display: none;">
     <div class="draw-content">
       <div class="draw-animation">
@@ -180,136 +180,42 @@
   <!-- 토스트 알림 -->
   <div id="toast" class="toast"></div>
 
-  <!-- ✅ NEW: 파티클 효과 컨테이너 -->
+  <!-- 파티클 효과 컨테이너 -->
   <div id="particles-container"></div>
 
   <script>
     const socket = io();
     let alreadyShownSurvivorMessage = false;
 
-    // ✅ NEW: 추첨 시작 알림
+    // 추첨 시작 알림
     socket.on('drawingStarted', (data) => {
       showToast('🎲 추첨이 시작되었습니다!', 'info');
     });
 
-    function showRoundResultModal(data) {
-  console.log('🎭 모달 표시 시작:', data);
-  
-  const modal = document.getElementById('result-modal');
-  if (!modal) {
-    console.error('❌ result-modal 요소를 찾을 수 없음');
-    return;
-  }
-  
-  const stats = data.stats;
-  if (!stats) {
-    console.error('❌ stats 데이터 없음, 기존 방식으로 처리');
-    const answerDisplay = document.getElementById('answer-display');
-    answerDisplay.innerText = `✅ 정답: ${data.answer}`;
-    answerDisplay.classList.add('show');
-    return;
-  }
-  
-  try {
-    // 제목 업데이트
-    document.getElementById('result-title').textContent = `🎉 ${data.round || ''}라운드 결과 발표`;
-    
-    // 문제 표시
-    document.getElementById('result-question-text').textContent = data.question || '문제 없음';
-    
-    // 정답 표시
-    const answerElement = document.getElementById('result-answer-text');
-    answerElement.textContent = data.answer || 'X';
-    answerElement.className = `answer-badge ${(data.answer || 'x').toLowerCase()}-answer`;
-    
-    // 진행률 바 업데이트
-    const progressBar = document.getElementById('result-progress');
-    const progressText = document.getElementById('result-rate');
-    
-    progressBar.style.width = `${stats.correctRate || 0}%`;
-    progressText.textContent = `${stats.correctRate || 0}% 정답 (${stats.correctCount || 0}/${stats.totalParticipants || 0}명)`;
-    
-    // 통계 업데이트
-    document.getElementById('result-survivors').textContent = `${stats.correctCount || 0}명`;
-    document.getElementById('result-eliminated').textContent = `${stats.incorrectCount || 0}명`;
-    document.getElementById('result-percentage').textContent = `${stats.correctRate || 0}%`;
-    
-    // ✅ 해설 표시 개선
-    const explanationElement = document.getElementById('result-explanation-text');
-    const explanationContainer = document.querySelector('.result-explanation');
-    
-    if (data.explanation && data.explanation.trim() && data.explanation !== '해설을 생성할 수 없습니다.') {
-      explanationElement.textContent = data.explanation;
-      explanationContainer.style.display = 'block';
-    } else {
-      // 해설이 없으면 해설 섹션 숨기기
-      explanationContainer.style.display = 'none';
-    }
-    
-    // 모달 표시
-    console.log('🎭 모달 표시 중...');
-    modal.style.display = 'flex';
-    
-    // 애니메이션을 위한 약간의 딜레이
-    setTimeout(() => {
-      modal.classList.add('show');
-      console.log('✨ 모달 애니메이션 완료');
-    }, 10);
-    
-  } catch (error) {
-    console.error('❌ 모달 표시 중 오류:', error);
-    // 폴백: 기존 방식으로 정답 표시
-    const answerDisplay = document.getElementById('answer-display');
-    answerDisplay.innerText = `✅ 정답: ${data.answer}`;
-    answerDisplay.classList.add('show');
-  }
-}
-
-   function closeResultModal() {
-  const modal = document.getElementById('result-modal');
-  modal.classList.remove('show');
-  setTimeout(() => {
-    modal.style.display = 'none';
-  }, 300);
-  
-  // ✅ 문제 텍스트를 "라운드 준비중"으로 변경
-  document.getElementById('question-box').innerText = '🎯 라운드 준비중...';
-  document.getElementById('answer-display').innerText = '';
-  document.getElementById('answer-display').classList.remove('show');
-
-    // ✅ NEW: 추첨 결과 표시
+    // 추첨 결과 표시
     socket.on('drawingResult', (data) => {
       showDrawResult(data.winners);
     });
 
-    // ✅ NEW: 게임 초기화 이벤트 처리
+    // 게임 초기화 이벤트 처리
     socket.on('reset', () => {
-      // 페이지 상태 초기화
       document.getElementById('question-box').innerText = '게임이 초기화되었습니다. 새로운 게임을 기다려주세요.';
       document.getElementById('answer-display').innerText = '';
       document.getElementById('answer-display').classList.remove('show');
       document.getElementById('participant-count').innerText = '현재 참여자 수: 0명';
       document.getElementById('current-round').innerText = '준비 중';
       document.getElementById('total-participants').innerText = '0명';
-      
-      // 생존자 박스 숨기기
       document.getElementById('survivor-box').style.display = 'none';
-      
-      // 사용자 입력 초기화
       document.getElementById('username').value = '';
       
-      // 채팅창 초기화
       const chatBox = document.getElementById('chat-box');
       chatBox.innerHTML = '<div class="chat-message bot"><i class="fas fa-robot"></i> 게임이 초기화되었습니다. 새로운 게임을 준비해주세요! 🎮</div>';
       
-      // 알림 표시
       showToast('🔄 게임이 초기화되었습니다!', 'info');
-      
-      // 전역 변수 초기화
       alreadyShownSurvivorMessage = false;
     });
 
-    // 소켓 이벤트 리스너
+    // 새 문제 수신
     socket.on('newQuestion', (data) => {
       document.getElementById('question-box').innerText = data.question;
       document.getElementById('answer-display').innerText = '';
@@ -317,7 +223,6 @@
       document.getElementById('participant-count').innerText = '현재 참여자 수: 0명';
       alreadyShownSurvivorMessage = false;
       
-      // 라운드 정보 업데이트
       if (data.round) {
         const currentRoundElement = document.getElementById('current-round');
         if (currentRoundElement) {
@@ -325,19 +230,18 @@
         }
       }
       
-      // 새 문제 애니메이션
       const questionContainer = document.querySelector('.question-container');
       questionContainer.style.animation = 'none';
       setTimeout(() => {
         questionContainer.style.animation = 'bounce 0.6s ease';
       }, 10);
       
-      // 라운드 정보 다시 로드
       setTimeout(() => {
         loadQuestion();
       }, 100);
     });
 
+    // 참여자 수 업데이트
     socket.on('participantCount', (count) => {
       console.log('참여자 수 업데이트:', count);
       document.getElementById('participant-count').innerText = `현재 참여자 수: ${count}명`;
@@ -347,15 +251,13 @@
       }
     });
 
+    // 라운드 종료
     socket.on('roundEnded', (data) => {
       console.log('🎯 라운드 종료 이벤트 수신:', data);
       
-      // ✅ 기존 정답 표시는 제거하고 통합 팝업으로 대체
       if (data.stats) {
-        // 새로운 형식 (해설 포함)
         showRoundResultModal(data);
       } else {
-        // 기존 형식 호환성
         const answerDisplay = document.getElementById('answer-display');
         answerDisplay.innerText = `✅ 정답: ${data.answer}`;
         answerDisplay.classList.add('show');
@@ -367,14 +269,14 @@
       renderSurvivors(data.survivors);
     });
 
+    // 생존자 업데이트
     socket.on('survivors', (data) => {
       console.log('👑 생존자 이벤트 수신:', data);
       renderSurvivors(data.survivors);
-      
-      // ✅ 생존자 정보 강제 업데이트
-      alreadyShownSurvivorMessage = false; // 플래그 리셋으로 다시 표시 가능하게
+      alreadyShownSurvivorMessage = false;
     });
 
+    // 연결 상태 처리
     socket.on('connect', () => {
       console.log('✅ 서버에 연결됨 - Socket ID:', socket.id);
       setTimeout(() => {
@@ -383,12 +285,10 @@
       }, 100);
     });
 
-    // ✅ NEW: 연결 끊김 처리
     socket.on('disconnect', () => {
       showToast('⚠️ 서버와의 연결이 끊어졌습니다. 재연결 중...', 'warning');
     });
 
-    // ✅ NEW: 재연결 처리
     socket.on('reconnect', () => {
       showToast('✅ 서버에 다시 연결되었습니다!', 'success');
       setTimeout(() => {
@@ -397,7 +297,82 @@
       }, 500);
     });
 
-    // ✅ NEW: 추첨 결과 표시
+    // 라운드 결과 모달 표시
+    function showRoundResultModal(data) {
+      console.log('🎭 모달 표시 시작:', data);
+      
+      const modal = document.getElementById('result-modal');
+      if (!modal) {
+        console.error('❌ result-modal 요소를 찾을 수 없음');
+        return;
+      }
+      
+      const stats = data.stats;
+      if (!stats) {
+        console.error('❌ stats 데이터 없음, 기존 방식으로 처리');
+        const answerDisplay = document.getElementById('answer-display');
+        answerDisplay.innerText = `✅ 정답: ${data.answer}`;
+        answerDisplay.classList.add('show');
+        return;
+      }
+      
+      try {
+        document.getElementById('result-title').textContent = `🎉 ${data.round || ''}라운드 결과 발표`;
+        document.getElementById('result-question-text').textContent = data.question || '문제 없음';
+        
+        const answerElement = document.getElementById('result-answer-text');
+        answerElement.textContent = data.answer || 'X';
+        answerElement.className = `answer-badge ${(data.answer || 'x').toLowerCase()}-answer`;
+        
+        const progressBar = document.getElementById('result-progress');
+        const progressText = document.getElementById('result-rate');
+        
+        progressBar.style.width = `${stats.correctRate || 0}%`;
+        progressText.textContent = `${stats.correctRate || 0}% 정답 (${stats.correctCount || 0}/${stats.totalParticipants || 0}명)`;
+        
+        document.getElementById('result-survivors').textContent = `${stats.correctCount || 0}명`;
+        document.getElementById('result-eliminated').textContent = `${stats.incorrectCount || 0}명`;
+        document.getElementById('result-percentage').textContent = `${stats.correctRate || 0}%`;
+        
+        const explanationElement = document.getElementById('result-explanation-text');
+        const explanationContainer = document.querySelector('.result-explanation');
+        
+        if (data.explanation && data.explanation.trim() && data.explanation !== '해설을 생성할 수 없습니다.') {
+          explanationElement.textContent = data.explanation;
+          explanationContainer.style.display = 'block';
+        } else {
+          explanationContainer.style.display = 'none';
+        }
+        
+        modal.style.display = 'flex';
+        
+        setTimeout(() => {
+          modal.classList.add('show');
+          console.log('✨ 모달 애니메이션 완료');
+        }, 10);
+        
+      } catch (error) {
+        console.error('❌ 모달 표시 중 오류:', error);
+        const answerDisplay = document.getElementById('answer-display');
+        answerDisplay.innerText = `✅ 정답: ${data.answer}`;
+        answerDisplay.classList.add('show');
+      }
+    }
+
+    // 라운드 결과 모달 닫기
+    function closeResultModal() {
+      const modal = document.getElementById('result-modal');
+      modal.classList.remove('show');
+      setTimeout(() => {
+        modal.style.display = 'none';
+      }, 300);
+      
+      document.getElementById('question-box').innerText = '🎯 라운드 준비중...';
+      document.getElementById('answer-display').innerText = '';
+      document.getElementById('answer-display').classList.remove('show');
+    }
+
+    // 추첨 결과 표시
     function showDrawResult(winners) {
       const modal = document.getElementById('draw-modal');
       const winnersDiv = document.getElementById('draw-winners');
@@ -419,7 +394,7 @@
       document.getElementById('draw-modal').style.display = 'none';
     }
 
-    // ✅ NEW: 파티클 효과
+    // 파티클 효과
     function triggerParticles() {
       const container = document.getElementById('particles-container');
       
@@ -443,44 +418,45 @@
       }, 5000);
     }
 
+    // 문제 로드
     async function loadQuestion() {
-  try {
-    const res = await fetch('/question');
-    const data = await res.json();
-    
-    // ✅ gameReady 상태에 따라 다른 메시지 표시
-    if (!data.gameReady && data.status === 'ended') {
-      document.getElementById('question-box').innerText = '🎯 라운드 준비중...';
-    } else {
-      document.getElementById('question-box').innerText = data.question || '문제 없음';
-    }
-    
-    const participantCount = data.participantCount || 0;
-    document.getElementById('participant-count').innerText = `현재 참여자 수: ${participantCount}명`;
-    document.getElementById('total-participants').innerText = `${participantCount}명`;
-    
-    const currentRoundElement = document.getElementById('current-round');
-    if (currentRoundElement) {
-      if (data.currentRound && data.currentRound > 0) {
-        currentRoundElement.innerText = `${data.currentRound}라운드`;
-      } else {
-        currentRoundElement.innerText = '준비 중';
+      try {
+        const res = await fetch('/question');
+        const data = await res.json();
+        
+        if (!data.gameReady && data.status === 'ended') {
+          document.getElementById('question-box').innerText = '🎯 라운드 준비중...';
+        } else {
+          document.getElementById('question-box').innerText = data.question || '문제 없음';
+        }
+        
+        const participantCount = data.participantCount || 0;
+        document.getElementById('participant-count').innerText = `현재 참여자 수: ${participantCount}명`;
+        document.getElementById('total-participants').innerText = `${participantCount}명`;
+        
+        const currentRoundElement = document.getElementById('current-round');
+        if (currentRoundElement) {
+          if (data.currentRound && data.currentRound > 0) {
+            currentRoundElement.innerText = `${data.currentRound}라운드`;
+          } else {
+            currentRoundElement.innerText = '준비 중';
+          }
+        }
+        
+        console.log('로드된 데이터:', { 
+          participantCount, 
+          currentRound: data.currentRound,
+          status: data.status,
+          gameReady: data.gameReady
+        });
+        
+      } catch (error) {
+        console.error('데이터 로드 실패:', error);
+        showToast('문제를 불러오는데 실패했습니다.', 'error');
       }
     }
-    
-    console.log('로드된 데이터:', { 
-      participantCount, 
-      currentRound: data.currentRound,
-      status: data.status,
-      gameReady: data.gameReady
-    });
-    
-  } catch (error) {
-    console.error('데이터 로드 실패:', error);
-    showToast('문제를 불러오는데 실패했습니다.', 'error');
-  }
-}
 
+    // 생존자 로드
     async function loadSurvivors() {
       try {
         const res = await fetch('/question');
@@ -493,6 +469,7 @@
       }
     }
 
+    // 생존자 렌더링
     function renderSurvivors(survivors) {
       const box = document.getElementById('survivor-box');
       const list = document.getElementById('survivor-list');
@@ -526,7 +503,7 @@
       }
     }
 
-    // 답안 제출 (향상된 피드백)
+    // 답안 제출
     async function submitAnswer(answer) {
       const name = document.getElementById('username').value.trim();
       if (!name) {
@@ -553,7 +530,6 @@
           showToast('생존자만 제출할 수 있습니다.', 'error');
         } else {
           showToast(`${answer} 답안이 제출되었습니다!`, 'success');
-          // ✅ 성공 시 파티클 효과
           createSubmitParticles(button);
         }
       } catch (err) {
@@ -567,7 +543,7 @@
       }
     }
 
-    // ✅ NEW: 제출 성공 시 파티클 효과
+    // 제출 파티클 효과
     function createSubmitParticles(button) {
       const rect = button.getBoundingClientRect();
       const container = document.getElementById('particles-container');
@@ -637,6 +613,7 @@
       }
     }
 
+    // 토스트 메시지
     function showToast(message, type = 'info') {
       const toast = document.getElementById('toast');
       toast.textContent = message;
