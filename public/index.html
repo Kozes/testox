@@ -105,7 +105,65 @@
     </div>
   </div>
 
-  <!-- ✅ NEW: 추첨 결과 모달 -->
+  <!-- ✅ NEW: 라운드 결과 통합 모달 -->
+  <div id="result-modal" class="result-modal" style="display: none;">
+    <div class="result-content">
+      <div class="result-header">
+        <h2 id="result-title">🎉 라운드 결과 발표</h2>
+      </div>
+      
+      <div class="result-question">
+        <div class="question-label">📝 문제</div>
+        <div id="result-question-text">문제 내용</div>
+      </div>
+      
+      <div class="result-answer">
+        <div class="answer-label">정답</div>
+        <div id="result-answer-text">O</div>
+      </div>
+      
+      <div class="result-stats">
+        <div class="stats-header">📊 이번 라운드</div>
+        <div class="progress-container">
+          <div class="progress-bar-large">
+            <div id="result-progress" class="progress-fill-large"></div>
+          </div>
+          <div id="result-rate" class="progress-text">67% 정답 (132/197명)</div>
+        </div>
+        
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-icon">👑</div>
+            <div class="stat-label">생존자</div>
+            <div id="result-survivors" class="stat-value">132명</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon">💀</div>
+            <div class="stat-label">탈락자</div>
+            <div id="result-eliminated" class="stat-value">65명</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-label">정답률</div>
+            <div id="result-percentage" class="stat-value">67%</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="result-explanation">
+        <div class="explanation-header">🧠 해설</div>
+        <div id="result-explanation-text" class="explanation-content">
+          해설을 불러오는 중...
+        </div>
+      </div>
+      
+      <div class="result-actions">
+        <button onclick="closeResultModal()" class="result-btn">
+          <i class="fas fa-check"></i> 다음 라운드 준비
+        </button>
+      </div>
+    </div>
+  </div>
   <div id="draw-modal" class="draw-modal" style="display: none;">
     <div class="draw-content">
       <div class="draw-animation">
@@ -133,6 +191,59 @@
     socket.on('drawingStarted', (data) => {
       showToast('🎲 추첨이 시작되었습니다!', 'info');
     });
+
+    // ✅ NEW: 라운드 결과 통합 모달 표시
+    function showRoundResultModal(data) {
+      const modal = document.getElementById('result-modal');
+      const stats = data.stats;
+      
+      // 제목 업데이트
+      document.getElementById('result-title').textContent = `🎉 ${data.round}라운드 결과 발표`;
+      
+      // 문제 표시
+      document.getElementById('result-question-text').textContent = data.question;
+      
+      // 정답 표시
+      const answerElement = document.getElementById('result-answer-text');
+      answerElement.textContent = data.answer;
+      answerElement.className = `answer-badge ${data.answer.toLowerCase()}-answer`;
+      
+      // 진행률 바 업데이트
+      const progressBar = document.getElementById('result-progress');
+      const progressText = document.getElementById('result-rate');
+      
+      progressBar.style.width = `${stats.correctRate}%`;
+      progressText.textContent = `${stats.correctRate}% 정답 (${stats.correctCount}/${stats.totalParticipants}명)`;
+      
+      // 통계 업데이트
+      document.getElementById('result-survivors').textContent = `${stats.correctCount}명`;
+      document.getElementById('result-eliminated').textContent = `${stats.incorrectCount}명`;
+      document.getElementById('result-percentage').textContent = `${stats.correctRate}%`;
+      
+      // 해설 표시
+      const explanationElement = document.getElementById('result-explanation-text');
+      if (data.explanation && data.explanation.trim()) {
+        explanationElement.textContent = data.explanation;
+      } else {
+        explanationElement.textContent = '해설을 준비 중입니다...';
+      }
+      
+      // 모달 표시
+      modal.style.display = 'flex';
+      
+      // 애니메이션을 위한 약간의 딜레이
+      setTimeout(() => {
+        modal.classList.add('show');
+      }, 10);
+    }
+
+    function closeResultModal() {
+      const modal = document.getElementById('result-modal');
+      modal.classList.remove('show');
+      setTimeout(() => {
+        modal.style.display = 'none';
+      }, 300);
+    }
 
     // ✅ NEW: 추첨 결과 표시
     socket.on('drawingResult', (data) => {
@@ -205,10 +316,9 @@
     });
 
     socket.on('roundEnded', (data) => {
-      const answerDisplay = document.getElementById('answer-display');
-      answerDisplay.innerText = `✅ 정답: ${data.answer}`;
-      answerDisplay.classList.add('show');
-
+      // ✅ 기존 정답 표시는 제거하고 통합 팝업으로 대체
+      showRoundResultModal(data);
+      
       if (alreadyShownSurvivorMessage) return;
       alreadyShownSurvivorMessage = true;
 
