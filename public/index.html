@@ -192,84 +192,90 @@
       showToast('🎲 추첨이 시작되었습니다!', 'info');
     });
 
-    // ✅ NEW: 라운드 결과 통합 모달 표시
     function showRoundResultModal(data) {
-      console.log('🎭 모달 표시 시작:', data);
-      
-      const modal = document.getElementById('result-modal');
-      if (!modal) {
-        console.error('❌ result-modal 요소를 찾을 수 없음');
-        return;
-      }
-      
-      const stats = data.stats;
-      if (!stats) {
-        console.error('❌ stats 데이터 없음, 기존 방식으로 처리');
-        // 기존 형식 처리
-        const answerDisplay = document.getElementById('answer-display');
-        answerDisplay.innerText = `✅ 정답: ${data.answer}`;
-        answerDisplay.classList.add('show');
-        return;
-      }
-      
-      try {
-        // 제목 업데이트
-        document.getElementById('result-title').textContent = `🎉 ${data.round || ''}라운드 결과 발표`;
-        
-        // 문제 표시
-        document.getElementById('result-question-text').textContent = data.question || '문제 없음';
-        
-        // 정답 표시
-        const answerElement = document.getElementById('result-answer-text');
-        answerElement.textContent = data.answer || 'X';
-        answerElement.className = `answer-badge ${(data.answer || 'x').toLowerCase()}-answer`;
-        
-        // 진행률 바 업데이트
-        const progressBar = document.getElementById('result-progress');
-        const progressText = document.getElementById('result-rate');
-        
-        progressBar.style.width = `${stats.correctRate || 0}%`;
-        progressText.textContent = `${stats.correctRate || 0}% 정답 (${stats.correctCount || 0}/${stats.totalParticipants || 0}명)`;
-        
-        // 통계 업데이트
-        document.getElementById('result-survivors').textContent = `${stats.correctCount || 0}명`;
-        document.getElementById('result-eliminated').textContent = `${stats.incorrectCount || 0}명`;
-        document.getElementById('result-percentage').textContent = `${stats.correctRate || 0}%`;
-        
-        // 해설 표시
-        const explanationElement = document.getElementById('result-explanation-text');
-        if (data.explanation && data.explanation.trim()) {
-          explanationElement.textContent = data.explanation;
-        } else {
-          explanationElement.textContent = '해설을 준비 중입니다...';
-        }
-        
-        // 모달 표시
-        console.log('🎭 모달 표시 중...');
-        modal.style.display = 'flex';
-        
-        // 애니메이션을 위한 약간의 딜레이
-        setTimeout(() => {
-          modal.classList.add('show');
-          console.log('✨ 모달 애니메이션 완료');
-        }, 10);
-        
-      } catch (error) {
-        console.error('❌ 모달 표시 중 오류:', error);
-        // 폴백: 기존 방식으로 정답 표시
-        const answerDisplay = document.getElementById('answer-display');
-        answerDisplay.innerText = `✅ 정답: ${data.answer}`;
-        answerDisplay.classList.add('show');
-      }
+  console.log('🎭 모달 표시 시작:', data);
+  
+  const modal = document.getElementById('result-modal');
+  if (!modal) {
+    console.error('❌ result-modal 요소를 찾을 수 없음');
+    return;
+  }
+  
+  const stats = data.stats;
+  if (!stats) {
+    console.error('❌ stats 데이터 없음, 기존 방식으로 처리');
+    const answerDisplay = document.getElementById('answer-display');
+    answerDisplay.innerText = `✅ 정답: ${data.answer}`;
+    answerDisplay.classList.add('show');
+    return;
+  }
+  
+  try {
+    // 제목 업데이트
+    document.getElementById('result-title').textContent = `🎉 ${data.round || ''}라운드 결과 발표`;
+    
+    // 문제 표시
+    document.getElementById('result-question-text').textContent = data.question || '문제 없음';
+    
+    // 정답 표시
+    const answerElement = document.getElementById('result-answer-text');
+    answerElement.textContent = data.answer || 'X';
+    answerElement.className = `answer-badge ${(data.answer || 'x').toLowerCase()}-answer`;
+    
+    // 진행률 바 업데이트
+    const progressBar = document.getElementById('result-progress');
+    const progressText = document.getElementById('result-rate');
+    
+    progressBar.style.width = `${stats.correctRate || 0}%`;
+    progressText.textContent = `${stats.correctRate || 0}% 정답 (${stats.correctCount || 0}/${stats.totalParticipants || 0}명)`;
+    
+    // 통계 업데이트
+    document.getElementById('result-survivors').textContent = `${stats.correctCount || 0}명`;
+    document.getElementById('result-eliminated').textContent = `${stats.incorrectCount || 0}명`;
+    document.getElementById('result-percentage').textContent = `${stats.correctRate || 0}%`;
+    
+    // ✅ 해설 표시 개선
+    const explanationElement = document.getElementById('result-explanation-text');
+    const explanationContainer = document.querySelector('.result-explanation');
+    
+    if (data.explanation && data.explanation.trim() && data.explanation !== '해설을 생성할 수 없습니다.') {
+      explanationElement.textContent = data.explanation;
+      explanationContainer.style.display = 'block';
+    } else {
+      // 해설이 없으면 해설 섹션 숨기기
+      explanationContainer.style.display = 'none';
     }
+    
+    // 모달 표시
+    console.log('🎭 모달 표시 중...');
+    modal.style.display = 'flex';
+    
+    // 애니메이션을 위한 약간의 딜레이
+    setTimeout(() => {
+      modal.classList.add('show');
+      console.log('✨ 모달 애니메이션 완료');
+    }, 10);
+    
+  } catch (error) {
+    console.error('❌ 모달 표시 중 오류:', error);
+    // 폴백: 기존 방식으로 정답 표시
+    const answerDisplay = document.getElementById('answer-display');
+    answerDisplay.innerText = `✅ 정답: ${data.answer}`;
+    answerDisplay.classList.add('show');
+  }
+}
 
-    function closeResultModal() {
-      const modal = document.getElementById('result-modal');
-      modal.classList.remove('show');
-      setTimeout(() => {
-        modal.style.display = 'none';
-      }, 300);
-    }
+   function closeResultModal() {
+  const modal = document.getElementById('result-modal');
+  modal.classList.remove('show');
+  setTimeout(() => {
+    modal.style.display = 'none';
+  }, 300);
+  
+  // ✅ 문제 텍스트를 "라운드 준비중"으로 변경
+  document.getElementById('question-box').innerText = '🎯 라운드 준비중...';
+  document.getElementById('answer-display').innerText = '';
+  document.getElementById('answer-display').classList.remove('show');
 
     // ✅ NEW: 추첨 결과 표시
     socket.on('drawingResult', (data) => {
@@ -437,38 +443,43 @@
       }, 5000);
     }
 
-    // 초기 데이터 로드
     async function loadQuestion() {
-      try {
-        const res = await fetch('/question');
-        const data = await res.json();
-        
-        document.getElementById('question-box').innerText = data.question || '문제 없음';
-        
-        const participantCount = data.participantCount || 0;
-        document.getElementById('participant-count').innerText = `현재 참여자 수: ${participantCount}명`;
-        document.getElementById('total-participants').innerText = `${participantCount}명`;
-        
-        const currentRoundElement = document.getElementById('current-round');
-        if (currentRoundElement) {
-          if (data.currentRound && data.currentRound > 0) {
-            currentRoundElement.innerText = `${data.currentRound}라운드`;
-          } else {
-            currentRoundElement.innerText = '준비 중';
-          }
-        }
-        
-        console.log('로드된 데이터:', { 
-          participantCount, 
-          currentRound: data.currentRound,
-          status: data.status 
-        });
-        
-      } catch (error) {
-        console.error('데이터 로드 실패:', error);
-        showToast('문제를 불러오는데 실패했습니다.', 'error');
+  try {
+    const res = await fetch('/question');
+    const data = await res.json();
+    
+    // ✅ gameReady 상태에 따라 다른 메시지 표시
+    if (!data.gameReady && data.status === 'ended') {
+      document.getElementById('question-box').innerText = '🎯 라운드 준비중...';
+    } else {
+      document.getElementById('question-box').innerText = data.question || '문제 없음';
+    }
+    
+    const participantCount = data.participantCount || 0;
+    document.getElementById('participant-count').innerText = `현재 참여자 수: ${participantCount}명`;
+    document.getElementById('total-participants').innerText = `${participantCount}명`;
+    
+    const currentRoundElement = document.getElementById('current-round');
+    if (currentRoundElement) {
+      if (data.currentRound && data.currentRound > 0) {
+        currentRoundElement.innerText = `${data.currentRound}라운드`;
+      } else {
+        currentRoundElement.innerText = '준비 중';
       }
     }
+    
+    console.log('로드된 데이터:', { 
+      participantCount, 
+      currentRound: data.currentRound,
+      status: data.status,
+      gameReady: data.gameReady
+    });
+    
+  } catch (error) {
+    console.error('데이터 로드 실패:', error);
+    showToast('문제를 불러오는데 실패했습니다.', 'error');
+  }
+}
 
     async function loadSurvivors() {
       try {
