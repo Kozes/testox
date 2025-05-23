@@ -227,25 +227,101 @@ app.post('/submit', (req, res) => {
   res.sendStatus(200);
 });
 
-app.post('/admin/end', (req, res) => {
+app.post('/admin/end', async (req, res) => {
   const survivors = gameState.participants.filter(p =>
     p.answer.trim().toUpperCase() === gameState.currentAnswer.trim().toUpperCase()
   );
+  const eliminated = gameState.participants.filter(p =>
+    p.answer.trim().toUpperCase() !== gameState.currentAnswer.trim().toUpperCase()
+  );
+  
   const names = survivors.map(s => s.name.trim()).filter(Boolean);
+  const totalParticipants = gameState.participants.length;
+  const correctCount = survivors.length;
+  const incorrectCount = eliminated.length;
+  const correctRate = totalParticipants > 0 ? Math.round((correctCount / totalParticipants) * 100) : 0;
 
   gameState.lastSurvivors = names;
   gameState.status = 'ended';
 
+  // ✅ 생존자 누적 저장
   names.forEach(name => gameState.allSurvivors.add(name.trim().toLowerCase()));
   
-  addLogEntry(`🔴 라운드 종료됨 - 생존자 ${names.join(', ')}`);
-
-  io.emit('roundEnded', {
-    answer: gameState.currentAnswer,
-    survivors: gameState.lastSurvivors
+  // ✅ 라운드별 이력 업데이트
+  gameState.participants.forEach(p => {
+    const name = p.name.trim();
+    const nameLower = name.toLowerCase();
+    
+    if (!gameState.roundHistory[nameLower]) {
+      gameState.roundHistory[nameLower] = { rounds: [], eliminatedAt: null };
+    }
+    
+    if (!gameState.roundHistory[nameLower].rounds.includes(gameState.round)) {
+      gameState.roundHistory[nameLower].rounds.push(gameState.round);
+    }
+    
+    if (eliminated.some(e => e.name.trim() === name) && !gameState.roundHistory[nameLower].eliminatedAt) {
+      gameState.roundHistory[nameLower].eliminatedAt = gameState.round;
+    }
+    
+    gameState.participantDetails[nameLower] = {
+      name: name,
+      totalRounds: gameState.roundHistory[nameLower].rounds.length,
+      status: names.includes(name) ? 'survived' : 'eliminated',
+      lastRound: gameState.round,
+      eliminatedAt: gameState.roundHistory[nameLower].eliminatedAt,
+      survivedRounds: gameState.roundHistory[nameLower].rounds.filter(r => 
+        !gameState.roundHistory[nameLower].eliminatedAt || r < gameState.roundHistory[nameLower].eliminatedAt
+      )
+    };
   });
+  
+  // ✅ NEW: 해설 자동 생성
+  let explanation = '';
+  try {
+    console.log('🔍 해설 생성 시작...');
+    explanation = await generateExplanation(gameState.currentQuestion, gameState.currentAnswer);
+    console.log('✅ 해설 생성 완료:', explanation.substring(0, 50) + '...');
+  } catch (error) {
+    console.error('❌ 해설 생성 실패:', error);
+    explanation = '해설을 생성할 수 없습니다.';
+  }
+  
+  addLogEntry(`🔴 라운드 종료됨 - 생존자 ${correctCount}명 (정답률 ${correctRate}%)`);
 
-  res.json({ message: '라운드 종료', survivors: gameState.lastSurvivors });
+  // ✅ 확장된 라운드 결과 전송
+  const roundResult = {
+    question: gameState.currentQuestion,
+    answer: gameState.currentAnswer,
+    round: gameState.round,
+    survivors: gameState.lastSurvivors,
+    stats: {
+      totalParticipants,
+      correctCount,
+      incorrectCount,
+      correctRate
+    },
+    explanation
+  };
+  
+  console.log('📡 roundEnded 이벤트 전송:', {
+    question: roundResult.question.substring(0, 30) + '...',
+    answer: roundResult.answer,
+    round: roundResult.round,
+    survivorCount: roundResult.survivors.length,
+    stats: roundResult.stats
+  });
+  
+  io.emit('roundEnded', roundResult);
+
+  // ✅ 별도로 생존자 정보도 전송 (기존 호환성)
+  io.emit('survivors', { survivors: gameState.lastSurvivors });
+
+  res.json({ 
+    message: '라운드 종료', 
+    survivors: gameState.lastSurvivors,
+    stats: { totalParticipants, correctCount, incorrectCount, correctRate }
+  });
 });
 
 // ✅ **NEW: 생존자 추첨 API**
