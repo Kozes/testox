@@ -347,6 +347,17 @@ body {
     margin-top: 20px;
 }
 
+.chat-warning {
+    font-size: 0.75rem;
+    color: #ff6b6b;
+    margin-left: auto;
+    opacity: 0.9;
+    font-weight: normal;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 .chat-box {
     background: rgba(0,0,0,0.3);
     border-radius: 10px;
@@ -408,7 +419,268 @@ body {
     box-shadow: 0 6px 20px rgba(112, 111, 211, 0.6);
 }
 
-/* ✅ NEW: 추첨 모달 */
+/* ✅ NEW: 라운드 결과 통합 모달 */
+.result-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    padding: 20px;
+}
+
+.result-modal.show {
+    opacity: 1;
+}
+
+.result-content {
+    background: linear-gradient(135deg, #706fd3, #40407a);
+    padding: 30px;
+    border-radius: 20px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: resultSlideIn 0.5s ease-out;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+@keyframes resultSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.result-header h2 {
+    color: white;
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 1.8rem;
+    font-weight: bold;
+}
+
+.result-question {
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-left: 4px solid #00d2ff;
+}
+
+.question-label {
+    font-size: 0.9rem;
+    color: #00d2ff;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+#result-question-text {
+    color: white;
+    font-size: 1.1rem;
+    line-height: 1.4;
+}
+
+.result-answer {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.answer-label {
+    color: rgba(255,255,255,0.8);
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+
+.answer-badge {
+    display: inline-block;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+}
+
+.o-answer {
+    background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+    box-shadow: 0 0 15px rgba(0, 210, 255, 0.5);
+}
+
+.x-answer {
+    background: linear-gradient(135deg, #ff416c, #ff4b2b);
+    box-shadow: 0 0 15px rgba(255, 65, 108, 0.5);
+}
+
+.result-stats {
+    background: rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.stats-header {
+    color: #00d2ff;
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.progress-container {
+    margin-bottom: 20px;
+}
+
+.progress-bar-large {
+    height: 12px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-fill-large {
+    height: 100%;
+    background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+    border-radius: 6px;
+    transition: width 1s ease;
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.6);
+}
+
+.progress-text {
+    text-align: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.stat-item {
+    text-align: center;
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    padding: 15px 10px;
+    transition: transform 0.3s ease;
+}
+
+.stat-item:hover {
+    transform: translateY(-2px);
+}
+
+.stat-icon {
+    font-size: 1.5rem;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    color: rgba(255,255,255,0.8);
+    font-size: 0.8rem;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.result-explanation {
+    background: rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.explanation-header {
+    color: #ffd700;
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.explanation-content {
+    color: white;
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+.result-actions {
+    text-align: center;
+}
+
+.result-btn {
+    background: linear-gradient(135deg, #ffd700, #ffb347);
+    color: #333;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 25px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 0 auto;
+}
+
+.result-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+}
+
+/* 모바일 최적화 */
+@media (max-width: 768px) {
+    .result-content {
+        padding: 20px;
+        margin: 10px;
+        max-height: 95vh;
+    }
+    
+    .result-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .stat-item {
+        padding: 12px;
+    }
+    
+    #result-question-text {
+        font-size: 1rem;
+    }
+    
+    .explanation-content {
+        font-size: 0.9rem;
+    }
+}
+
+/* ✅ 추첨 모달 */
 .draw-modal {
     position: fixed;
     top: 0;
